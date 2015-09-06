@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		235B160E1B946F3E0009D192 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 235B160D1B946F3E0009D192 /* main.cpp */; };
+		23EB6CC51B9C844300A8F64B /* RootUtil.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 23EB6CC31B9C844300A8F64B /* RootUtil.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -26,6 +27,8 @@
 		235B160A1B946F3E0009D192 /* ModelCompare */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ModelCompare; sourceTree = BUILT_PRODUCTS_DIR; };
 		235B160D1B946F3E0009D192 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		235B16141B94708E0009D192 /* common.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = common.h; path = ../../SherpaWeight/SherpaWeight/Source/Common/common.h; sourceTree = "<group>"; };
+		23EB6CC31B9C844300A8F64B /* RootUtil.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RootUtil.cpp; sourceTree = "<group>"; };
+		23EB6CC41B9C844300A8F64B /* RootUtil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RootUtil.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -60,6 +63,8 @@
 			children = (
 				235B16141B94708E0009D192 /* common.h */,
 				235B160D1B946F3E0009D192 /* main.cpp */,
+				23EB6CC31B9C844300A8F64B /* RootUtil.cpp */,
+				23EB6CC41B9C844300A8F64B /* RootUtil.h */,
 			);
 			path = ModelCompare;
 			sourceTree = "<group>";
@@ -120,6 +125,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				23EB6CC51B9C844300A8F64B /* RootUtil.cpp in Sources */,
 				235B160E1B946F3E0009D192 /* main.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
