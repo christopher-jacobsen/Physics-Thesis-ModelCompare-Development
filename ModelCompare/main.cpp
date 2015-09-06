@@ -349,6 +349,8 @@ static void ModelCompare( const char * outputFileName, const ModelFileVector & m
         ThrowError( std::invalid_argument( outputFileName ) );
     }
 
+    std::vector< std::unique_ptr<TH1D> > tempHists;
+
     // determine which model files are to be loaded
 
     ModelFileVector loadModels;     // loadModels[model]
@@ -404,6 +406,40 @@ static void ModelCompare( const char * outputFileName, const ModelFileVector & m
             figData  .push_back( modelData[  modelIndex ] );
         }
 
+        // adjust for luminosity
+        if (figSetup.luminosity > 0)
+        {
+            double luminosity = figSetup.luminosity;  // fb^-1
+
+            for (size_t modelIndex = 0; modelIndex < figModels.size(); ++modelIndex)
+            {
+                double crossSection = figModels[modelIndex].crossSection * 1000; // fb
+                double nEntries     = figData[modelIndex][0]->GetEntries();
+                size_t nEvents      = (size_t)nEntries;
+
+                if (((double)nEvents != nEntries) || !nEvents)
+                    ThrowError( "Non-integral number of entries: " + std::to_string(nEntries) );
+
+                double scale = luminosity * crossSection / nEvents;
+
+                TH1DVector & obsData = figData[modelIndex];
+                for ( TH1D * & pHist : obsData )
+                {
+                    if (pHist->GetEntries() != nEntries)
+                        ThrowError( "Inconsistent number of entries: " + std::to_string(pHist->GetEntries()) + " expected: " + std::to_string(nEntries) );
+
+                    TH1D * pClone = dynamic_cast<TH1D *>( pHist->Clone() );
+
+                    pClone->Scale( scale );
+                    pClone->SetDirectory( nullptr );    // ensure not owned by any directory
+
+                    pHist = pClone;  // replace histogram in obsData
+
+                    tempHists.push_back( std::unique_ptr<TH1D>(pClone) );
+                }
+            }
+        }
+
         // for each observable
 
         for (size_t obsIndex = 0; obsIndex < observables.size(); ++obsIndex)
@@ -449,27 +485,50 @@ static const ObservableVector Observables1 =
 
 static const ModelFileVector Models_1E4 =
 {
-    { "SM_211_1E4.hepmc2g",             "SM_211",       "SM (2.1.1)",                   18.3748 },
-    { "SM_220_1E4.hepmc2g",             "SM_220",       "SM (2.2.0)",                   18.2613 },
-    { "SM_AGC_211_1E4.hepmc2g",         "SM_AGC",       "SM-AGC (2.1.1)",               18.6957 },
-    { "SM_UFO_220_1E4.hepmc2g",         "SM_UFO",       "SM-UFO (2.2.0)",               18.2796 },
-    { "EFT_cWWW_3E-5_220_1E4.hepmc2g",  "EFT_cWWW",     "EFT cWWW = 3E-5 (2.2.0)",      31.9028 },
+    { "SM_211_1E4.hepmc2g",                 "SM_211",       "SM (2.1.1)",                                   18.3748 },
+    { "SM_220_1E4.hepmc2g",                 "SM_220",       "SM (2.2.0)",                                   18.2613 },
+    { "SM_AGC_211_1E4.hepmc2g",             "SM_AGC",       "SM-AGC (2.1.1)",                               18.6957 },
+    { "SM_UFO_220_1E4.hepmc2g",             "SM_UFO",       "SM-UFO (2.2.0)",                               18.2796 },
+
+    { "EFT_220_cWWW_3E-5_1E4.hepmc2g",      "EFT_cWWW",     "EFT cWWW = 3E-5",                              30.3160 },
+    { "EFT_220_cW_5E-5_1E4.hepmc2g",        "EFT_cW",       "EFT cW = 5E-5",                                30.7824 },
+    { "EFT_220_cB_9E-4_1E4.hepmc2g",        "EFT_cB",       "EFT cB = 9E-4",                                31.4724 },
+
+    { "AGC_211_lambda_127E-3_1E4.hepmc2g",  "AGC_lambda",   "AGC #lambda_{#gamma/Z} = 0.127",               30.5172 },
+    { "AGC_211_g1_121E-2_1E4.hepmc2g",      "AGC_g1",       "AGC #Deltag1_{Z} = 0.208",                     30.6187 },
+    { "AGC_211_kappa_391E-2_1E4.hepmc2g",   "AGC_kappa",    "AGC #Delta#kappa_{#gamma/Z} = 2.91/-0.83",     31.5387 },
 };
 
 static const ModelFileVector Models_1E5 =
 {
-    { "SM_211_1E5.hepmc2g",             "SM_211",       "SM (2.1.1)",                   18.4996 },
-    { "SM_220_1E5.hepmc2g",             "SM_220",       "SM (2.2.0)",                   18.4850 },
-    { "SM_AGC_211_1E5.hepmc2g",         "SM_AGC",       "SM-AGC (2.1.1)",               18.5791 },
-    { "SM_UFO_220_1E5.hepmc2g",         "SM_UFO",       "SM-UFO (2.2.0)",               18.4768 },
+    { "SM_211_1E5.hepmc2g",                 "SM_211",       "SM (2.1.1)",                                   18.4996 },
+    { "SM_220_1E5.hepmc2g",                 "SM_220",       "SM (2.2.0)",                                   18.4850 },
+    { "SM_AGC_211_1E5.hepmc2g",             "SM_AGC",       "SM-AGC (2.1.1)",                               18.5791 },
+    { "SM_UFO_220_1E5.hepmc2g",             "SM_UFO",       "SM-UFO (2.2.0)",                               18.4768 },
+
+    { "EFT_220_cWWW_3E-5_1E5.hepmc2g",      "EFT_cWWW",     "EFT cWWW = 3E-5",                              30.4574 },
+    { "EFT_220_cW_5E-5_1E5.hepmc2g",        "EFT_cW",       "EFT cW = 5E-5",                                30.6749 },
+    { "EFT_220_cB_9E-4_1E5.hepmc2g",        "EFT_cB",       "EFT cB = 9E-4",                                31.6042 },
+
+    { "AGC_211_lambda_127E-3_1E5.hepmc2g",  "AGC_lambda",   "AGC #lambda_{#gamma/Z} = 0.127",               30.5842 },
+    { "AGC_211_g1_121E-2_1E5.hepmc2g",      "AGC_g1",       "AGC #Deltag1_{Z} = 0.208",                     30.7988 },
+    { "AGC_211_kappa_391E-2_1E5.hepmc2g",   "AGC_kappa",    "AGC #Delta#kappa_{#gamma/Z} = 2.91/-0.83",     31.6995 },
 };
 
 static const ModelFileVector Models_1E6 =
 {
-    { "SM_211_1E6.hepmc2g",             "SM_211",       "SM (2.1.1)",                   18.5248 },
-    { "SM_220_1E6.hepmc2g",             "SM_220",       "SM (2.2.0)",                   18.5537 },
-    { "SM_AGC_211_1E6.hepmc2g",         "SM_AGC",       "SM-AGC (2.1.1)",               18.5432 },
-    { "SM_UFO_220_1E6.hepmc2g",         "SM_UFO",       "SM-UFO (2.2.0)",               18.5476 },
+    { "SM_211_1E6.hepmc2g",                 "SM_211",       "SM (2.1.1)",                                   18.5248 },
+    { "SM_220_1E6.hepmc2g",                 "SM_220",       "SM (2.2.0)",                                   18.5537 },
+    { "SM_AGC_211_1E6.hepmc2g",             "SM_AGC",       "SM-AGC (2.1.1)",                               18.5432 },
+    { "SM_UFO_220_1E6.hepmc2g",             "SM_UFO",       "SM-UFO (2.2.0)",                               18.5476 },
+
+    { "EFT_220_cWWW_3E-5_1E6.hepmc2g",      "EFT_cWWW",     "EFT cWWW = 3E-5",                              30.4268 },
+    { "EFT_220_cW_5E-5_1E6.hepmc2g",        "EFT_cW",       "EFT cW = 5E-5",                                30.7167 },
+    { "EFT_220_cB_9E-4_1E6.hepmc2g",        "EFT_cB",       "EFT cB = 9E-4",                                31.6710 },
+
+    { "AGC_211_lambda_127E-3_1E6.hepmc2g",  "AGC_lambda",   "AGC #lambda_{#gamma/Z} = 0.127",               30.4655 },
+    { "AGC_211_g1_121E-2_1E6.hepmc2g",      "AGC_g1",       "AGC #Deltag1_{Z} = 0.208",                     30.7150 },
+    { "AGC_211_kappa_391E-2_1E6.hepmc2g",   "AGC_kappa",    "AGC #Delta#kappa_{#gamma/Z} = 2.91/-0.83",     31.7246 },
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -482,14 +541,39 @@ static const FigureSetupVector Compare1 =
     { { "SM_220", "SM_AGC" },  0.0, { kBlack, kGreen } },
     { { "SM_220", "SM_UFO" },  0.0, { kBlack, kRed   } },
 
-  //{ {{ "SM_220", kBlack }, { "EFT_cWWW", kRed }}, 0.0   },
-  //{ {{ "SM_220", kBlack }, { "EFT_cWWW", kRed }}, 100.0 },
+    { { "SM_220", "EFT_cWWW"   }, 0.0, { kBlack, kRed } },
+    { { "SM_211", "AGC_lambda" }, 0.0, { kBlack, kRed } },
+};
+
+static const FigureSetupVector Compare2 =
+{
+    { { "SM_220", "EFT_cWWW"   }, 1.0, { kBlack, kRed  } },
+    { { "SM_211", "AGC_lambda" }, 1.0, { kBlack, kBlue } },
+};
+
+static const FigureSetupVector Compare3 =
+{
+    { { "AGC_lambda", "EFT_cWWW" }, 0.0, { kBlue,  kRed } },
+};
+
+static const FigureSetupVector Compare4 =
+{
+    { { "AGC_g1", "EFT_cW" }, 0.0, { kBlue,  kRed } },
+};
+
+static const FigureSetupVector Compare5 =
+{
+    { { "AGC_kappa", "EFT_cB" }, 0.0, { kBlue,  kRed } },
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 int main()
 {
-    ModelCompare( "compare/compare1.root", Models_1E4, Observables1, Compare1 );
+  //ModelCompare( "compare/compare1.root",  Models_1E4, Observables1, Compare1 );
+  //ModelCompare( "compare/compare2b.root", Models_1E4, Observables1, Compare2 );
+  //ModelCompare( "compare/compare3.root" , Models_1E6, Observables1, Compare3 );
+  //ModelCompare( "compare/compare4.root" , Models_1E6, Observables1, Compare4 );
+    ModelCompare( "compare/compare5.root" , Models_1E6, Observables1, Compare5 );
 
     LogMsgInfo( "Done." );
     return 0;
