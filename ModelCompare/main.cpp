@@ -91,70 +91,6 @@ const ColorVector FigureSetup::DefaultColors =
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-
-static void ModelCompare( const char * outputFileName, const ModelFileVector & models, const ObservableVector & observables, const FigureSetupVector & figures );
-
-////////////////////////////////////////////////////////////////////////////////
-
-static const ObservableVector Observables =
-{
-    { "PTZ", "P_{T}(Z)",  100,     0,  500, "P_{T}(Z) [GeV/c]", "Events per 5 GeV/c",       [](const HepMC::GenVertex & s, TH1D & h) { FillHistPT( s, h, 24);     } },
-    { "MWZ", "M(WZ)",     100,     0, 1500, "M(WZ) [GeV/c^2]",  "Events per 15 GeV/c^2",    [](const HepMC::GenVertex & s, TH1D & h) { FillHistM2( s, h, 24, 23); } },
-    { "ETZ", "#eta(Z)",   100,   -10,   10, "#eta(Z)",          "Events per bin",           [](const HepMC::GenVertex & s, TH1D & h) { FillHistEta(s, h, 24);     } },
-    { "PHZ", "#phi(Z)",   100, -M_PI, M_PI, "#phi(Z)",          "Events per bin",           [](const HepMC::GenVertex & s, TH1D & h) { FillHistPhi(s, h, 24);     } },
-};
-
-////////////////////////////////////////////////////////////////////////////////
-
-static const ModelFileVector Models_1E4 =
-{
-    { "SM_211_1E4.hepmc2g",             "SM_211",       "SM (2.1.1)",                   18.3748 },
-    { "SM_220_1E4.hepmc2g",             "SM_220",       "SM (2.2.0)",                   18.2613 },
-    { "SM_AGC_211_1E4.hepmc2g",         "SM_AGC",       "SM-AGC (2.1.1)",               18.6957 },
-    { "SM_UFO_220_1E4.hepmc2g",         "SM_UFO",       "SM-UFO (2.2.0)",               18.2796 },
-    { "EFT_cWWW_3E-5_220_1E4.hepmc2g",  "EFT_cWWW",     "EFT cWWW = 3E-5 (2.2.0)",      31.9028 },
-};
-
-static const ModelFileVector Models_1E5 =
-{
-    { "SM_211_1E5.hepmc2g",             "SM_211",       "SM (2.1.1)",                   18.4996 },
-    { "SM_220_1E5.hepmc2g",             "SM_220",       "SM (2.2.0)",                   18.4850 },
-    { "SM_AGC_211_1E5.hepmc2g",         "SM_AGC",       "SM-AGC (2.1.1)",               18.5791 },
-    { "SM_UFO_220_1E5.hepmc2g",         "SM_UFO",       "SM-UFO (2.2.0)",               18.4768 },
-};
-
-static const ModelFileVector Models_1E6 =
-{
-    { "SM_211_1E6.hepmc2g",             "SM_211",       "SM (2.1.1)",                   18.5248 },
-    { "SM_220_1E6.hepmc2g",             "SM_220",       "SM (2.2.0)",                   18.5537 },
-    { "SM_AGC_211_1E6.hepmc2g",         "SM_AGC",       "SM-AGC (2.1.1)",               18.5432 },
-    { "SM_UFO_220_1E6.hepmc2g",         "SM_UFO",       "SM-UFO (2.2.0)",               18.5476 },
-};
-
-////////////////////////////////////////////////////////////////////////////////
-
-static const FigureSetupVector Compare1 =
-{
-    //  base, compare files,    luminosity
-    { { "SM_220", "SM_211" },  0.0, { kBlack, kBlue  } },
-    { { "SM_211", "SM_AGC" },  0.0, { kBlue,  kGreen } },
-    { { "SM_220", "SM_AGC" },  0.0, { kBlack, kGreen } },
-    { { "SM_220", "SM_UFO" },  0.0, { kBlack, kRed   } },
-
-  //{ {{ "SM_220", kBlack }, { "EFT_cWWW", kRed }}, 0.0   },
-  //{ {{ "SM_220", kBlack }, { "EFT_cWWW", kRed }}, 100.0 },
-};
-
-////////////////////////////////////////////////////////////////////////////////
-int main()
-{
-    ModelCompare( "compare/compare1.root", Models_1E4, Observables, Compare1 );
-
-    LogMsgInfo( "Done." );
-    return 0;
-}
-
-////////////////////////////////////////////////////////////////////////////////
 static void WriteCompareFigure( const char * name, const char * title, const ConstTH1DVector & data, ConstTH1DVector & compare, const ColorVector & dataColors )
 {
     TCanvas canvas( name, title );
@@ -497,4 +433,64 @@ static void ModelCompare( const char * outputFileName, const ModelFileVector & m
 
     //upOutputFile->Write( 0, TFile::kOverwrite );
     upOutputFile->Close();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+static const ObservableVector Observables1 =
+{
+    { "PTZ", "P_{T}(Z)",  100,     0,  500, "P_{T}(Z) [GeV/c]", "Events per 5 GeV/c",       [](const HepMC::GenVertex & s, TH1D & h) { FillHistPT( s, h, 24);     } },
+    { "MWZ", "M(WZ)",     100,     0, 1500, "M(WZ) [GeV/c^2]",  "Events per 15 GeV/c^2",    [](const HepMC::GenVertex & s, TH1D & h) { FillHistM2( s, h, 24, 23); } },
+    { "ETZ", "#eta(Z)",   100,   -10,   10, "#eta(Z)",          "Events per bin",           [](const HepMC::GenVertex & s, TH1D & h) { FillHistEta(s, h, 24);     } },
+    { "PHZ", "#phi(Z)",   100, -M_PI, M_PI, "#phi(Z)",          "Events per bin",           [](const HepMC::GenVertex & s, TH1D & h) { FillHistPhi(s, h, 24);     } },
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+static const ModelFileVector Models_1E4 =
+{
+    { "SM_211_1E4.hepmc2g",             "SM_211",       "SM (2.1.1)",                   18.3748 },
+    { "SM_220_1E4.hepmc2g",             "SM_220",       "SM (2.2.0)",                   18.2613 },
+    { "SM_AGC_211_1E4.hepmc2g",         "SM_AGC",       "SM-AGC (2.1.1)",               18.6957 },
+    { "SM_UFO_220_1E4.hepmc2g",         "SM_UFO",       "SM-UFO (2.2.0)",               18.2796 },
+    { "EFT_cWWW_3E-5_220_1E4.hepmc2g",  "EFT_cWWW",     "EFT cWWW = 3E-5 (2.2.0)",      31.9028 },
+};
+
+static const ModelFileVector Models_1E5 =
+{
+    { "SM_211_1E5.hepmc2g",             "SM_211",       "SM (2.1.1)",                   18.4996 },
+    { "SM_220_1E5.hepmc2g",             "SM_220",       "SM (2.2.0)",                   18.4850 },
+    { "SM_AGC_211_1E5.hepmc2g",         "SM_AGC",       "SM-AGC (2.1.1)",               18.5791 },
+    { "SM_UFO_220_1E5.hepmc2g",         "SM_UFO",       "SM-UFO (2.2.0)",               18.4768 },
+};
+
+static const ModelFileVector Models_1E6 =
+{
+    { "SM_211_1E6.hepmc2g",             "SM_211",       "SM (2.1.1)",                   18.5248 },
+    { "SM_220_1E6.hepmc2g",             "SM_220",       "SM (2.2.0)",                   18.5537 },
+    { "SM_AGC_211_1E6.hepmc2g",         "SM_AGC",       "SM-AGC (2.1.1)",               18.5432 },
+    { "SM_UFO_220_1E6.hepmc2g",         "SM_UFO",       "SM-UFO (2.2.0)",               18.5476 },
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+static const FigureSetupVector Compare1 =
+{
+    //  base, compare files,    luminosity
+    { { "SM_220", "SM_211" },  0.0, { kBlack, kBlue  } },
+    { { "SM_211", "SM_AGC" },  0.0, { kBlue,  kGreen } },
+    { { "SM_220", "SM_AGC" },  0.0, { kBlack, kGreen } },
+    { { "SM_220", "SM_UFO" },  0.0, { kBlack, kRed   } },
+
+  //{ {{ "SM_220", kBlack }, { "EFT_cWWW", kRed }}, 0.0   },
+  //{ {{ "SM_220", kBlack }, { "EFT_cWWW", kRed }}, 100.0 },
+};
+
+////////////////////////////////////////////////////////////////////////////////
+int main()
+{
+    ModelCompare( "compare/compare1.root", Models_1E4, Observables1, Compare1 );
+
+    LogMsgInfo( "Done." );
+    return 0;
 }
