@@ -493,10 +493,12 @@ static const ModelFileVector Models_1E4 =
     { "EFT_220_cWWW_3E-5_1E4.hepmc2g",      "EFT_cWWW",     "EFT cWWW = 3E-5",                              30.3160 },
     { "EFT_220_cW_5E-5_1E4.hepmc2g",        "EFT_cW",       "EFT cW = 5E-5",                                30.7824 },
     { "EFT_220_cB_9E-4_1E4.hepmc2g",        "EFT_cB",       "EFT cB = 9E-4",                                31.4724 },
+    { "EFT_220_all_1E4.hepmc2g",            "EFT_all",      "EFT (all)",                                    42.9091 },
 
     { "AGC_211_lambda_127E-3_1E4.hepmc2g",  "AGC_lambda",   "AGC #lambda_{#gamma/Z} = 0.127",               30.5172 },
     { "AGC_211_g1_121E-2_1E4.hepmc2g",      "AGC_g1",       "AGC #Deltag1_{Z} = 0.208",                     30.6187 },
     { "AGC_211_kappa_391E-2_1E4.hepmc2g",   "AGC_kappa",    "AGC #Delta#kappa_{#gamma/Z} = 2.91/-0.83",     31.5387 },
+    { "AGC_211_all_1E4.hepmc2g",            "AGC_all",      "AGC (all)",                                    43.1840 },
 };
 
 static const ModelFileVector Models_1E5 =
@@ -509,10 +511,12 @@ static const ModelFileVector Models_1E5 =
     { "EFT_220_cWWW_3E-5_1E5.hepmc2g",      "EFT_cWWW",     "EFT cWWW = 3E-5",                              30.4574 },
     { "EFT_220_cW_5E-5_1E5.hepmc2g",        "EFT_cW",       "EFT cW = 5E-5",                                30.6749 },
     { "EFT_220_cB_9E-4_1E5.hepmc2g",        "EFT_cB",       "EFT cB = 9E-4",                                31.6042 },
+    { "EFT_220_all_1E5.hepmc2g",            "EFT_all",      "EFT (all)",                                    42.8231 },
 
     { "AGC_211_lambda_127E-3_1E5.hepmc2g",  "AGC_lambda",   "AGC #lambda_{#gamma/Z} = 0.127",               30.5842 },
     { "AGC_211_g1_121E-2_1E5.hepmc2g",      "AGC_g1",       "AGC #Deltag1_{Z} = 0.208",                     30.7988 },
     { "AGC_211_kappa_391E-2_1E5.hepmc2g",   "AGC_kappa",    "AGC #Delta#kappa_{#gamma/Z} = 2.91/-0.83",     31.6995 },
+    { "AGC_211_all_1E5.hepmc2g",            "AGC_all",      "AGC (all)",                                    42.7991 },
 };
 
 static const ModelFileVector Models_1E6 =
@@ -525,10 +529,12 @@ static const ModelFileVector Models_1E6 =
     { "EFT_220_cWWW_3E-5_1E6.hepmc2g",      "EFT_cWWW",     "EFT cWWW = 3E-5",                              30.4268 },
     { "EFT_220_cW_5E-5_1E6.hepmc2g",        "EFT_cW",       "EFT cW = 5E-5",                                30.7167 },
     { "EFT_220_cB_9E-4_1E6.hepmc2g",        "EFT_cB",       "EFT cB = 9E-4",                                31.6710 },
+    { "EFT_220_all_1E6.hepmc2g",            "EFT_all",      "EFT (all)",                                    42.8051 },
 
     { "AGC_211_lambda_127E-3_1E6.hepmc2g",  "AGC_lambda",   "AGC #lambda_{#gamma/Z} = 0.127",               30.4655 },
     { "AGC_211_g1_121E-2_1E6.hepmc2g",      "AGC_g1",       "AGC #Deltag1_{Z} = 0.208",                     30.7150 },
     { "AGC_211_kappa_391E-2_1E6.hepmc2g",   "AGC_kappa",    "AGC #Delta#kappa_{#gamma/Z} = 2.91/-0.83",     31.7246 },
+    { "AGC_211_all_1E6.hepmc2g",            "AGC_all",      "AGC (all)",                                    42.8286 },
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -566,14 +572,20 @@ static const FigureSetupVector Compare5 =
     { { "AGC_kappa", "EFT_cB" }, 0.0, { kBlue,  kRed } },
 };
 
+static const FigureSetupVector Compare6 =
+{
+    { { "AGC_all", "EFT_all" }, 0.0, { kBlue,  kRed } },
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 int main()
 {
-  //ModelCompare( "compare/compare1.root",  Models_1E4, Observables1, Compare1 );
-  //ModelCompare( "compare/compare2b.root", Models_1E4, Observables1, Compare2 );
-  //ModelCompare( "compare/compare3.root" , Models_1E6, Observables1, Compare3 );
-  //ModelCompare( "compare/compare4.root" , Models_1E6, Observables1, Compare4 );
-    ModelCompare( "compare/compare5.root" , Models_1E6, Observables1, Compare5 );
+  //ModelCompare( "../compare/compare1.root",  Models_1E4, Observables1, Compare1 );
+  //ModelCompare( "../compare/compare2b.root", Models_1E4, Observables1, Compare2 );
+  //ModelCompare( "../compare/compare3.root" , Models_1E6, Observables1, Compare3 );
+  //ModelCompare( "../compare/compare4.root" , Models_1E6, Observables1, Compare4 );
+  //ModelCompare( "../compare/compare5.root" , Models_1E6, Observables1, Compare5 );
+    ModelCompare( "../compare/compare6.root" , Models_1E6, Observables1, Compare6 );
 
     LogMsgInfo( "Done." );
     return 0;
