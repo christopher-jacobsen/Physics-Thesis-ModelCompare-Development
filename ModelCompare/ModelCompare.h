@@ -27,6 +27,11 @@ class GenVertex;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+namespace ModelCompare
+{
+
+////////////////////////////////////////////////////////////////////////////////
+
 typedef std::function<void(const HepMC::GenVertex & signal, TH1D & hist)> FillHistFunction;
 
 struct Observable
@@ -88,6 +93,10 @@ void CalculateCompareHists( const Observable & obs, const RootUtil::ConstTH1DVec
                             const ModelFileVector & models, const RootUtil::ColorVector & dataColors );
 
 void ModelCompare( const char * outputFileName, const ModelFileVector & models, const ObservableVector & observables, const FigureSetupVector & figures );
+
+////////////////////////////////////////////////////////////////////////////////
+
+}  // namespace ModelCompare
 
 ////////////////////////////////////////////////////////////////////////////////
 

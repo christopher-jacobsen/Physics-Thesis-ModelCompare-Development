@@ -13,6 +13,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 using namespace RootUtil;
+using namespace ModelCompare;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -123,12 +124,12 @@ static const FigureSetupVector Compare6 =
 ////////////////////////////////////////////////////////////////////////////////
 int main()
 {
-  //ModelCompare( "../compare/compare1.root",  Models_1E4, Observables1, Compare1 );
-  //ModelCompare( "../compare/compare2b.root", Models_1E4, Observables1, Compare2 );
-  //ModelCompare( "../compare/compare3.root" , Models_1E6, Observables1, Compare3 );
-  //ModelCompare( "../compare/compare4.root" , Models_1E6, Observables1, Compare4 );
-  //ModelCompare( "../compare/compare5.root" , Models_1E6, Observables1, Compare5 );
-    ModelCompare( "../compare/compare6.root" , Models_1E6, Observables1, Compare6 );
+  //ModelCompare::ModelCompare( "../compare/compare1.root",  Models_1E4, Observables1, Compare1 );
+  //ModelCompare::ModelCompare( "../compare/compare2b.root", Models_1E4, Observables1, Compare2 );
+  //ModelCompare::ModelCompare( "../compare/compare3.root" , Models_1E6, Observables1, Compare3 );
+  //ModelCompare::ModelCompare( "../compare/compare4.root" , Models_1E6, Observables1, Compare4 );
+  //ModelCompare::ModelCompare( "../compare/compare5.root" , Models_1E6, Observables1, Compare5 );
+    ModelCompare::ModelCompare( "../compare/compare6.root" , Models_1E6, Observables1, Compare6 );
 
     LogMsgInfo( "Done." );
     return 0;
