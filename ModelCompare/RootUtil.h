@@ -49,10 +49,10 @@ inline TLorentzVector ToLorentz( const HepMC::FourVector & v )
 
 void LoadEvents( const char * eventFileName, std::function<void(const HepMC::GenVertex & signal)> EventFunc );
 
-void FillHistPT(  const HepMC::GenVertex & signal, TH1D & hist, int pdg );
-void FillHistEta( const HepMC::GenVertex & signal, TH1D & hist, int pdg );
-void FillHistPhi( const HepMC::GenVertex & signal, TH1D & hist, int pdg );
-void FillHistM2(  const HepMC::GenVertex & signal, TH1D & hist, int pdg1, int pdg2 );
+void FillHistPT(  const HepMC::GenVertex & signal, TH1D & hist, double weight, int pdg );
+void FillHistEta( const HepMC::GenVertex & signal, TH1D & hist, double weight, int pdg );
+void FillHistPhi( const HepMC::GenVertex & signal, TH1D & hist, double weight, int pdg );
+void FillHistM2(  const HepMC::GenVertex & signal, TH1D & hist, double weight, int pdg1, int pdg2 );
 
 void LogMsgUnderOverflow( const TH1D & hist );
 

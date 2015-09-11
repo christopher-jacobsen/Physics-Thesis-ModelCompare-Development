@@ -53,7 +53,7 @@ void LoadEvents( const char * eventFileName, std::function<void(const HepMC::Gen
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void FillHistPT( const HepMC::GenVertex & signal, TH1D & hist, int pdg )
+void FillHistPT( const HepMC::GenVertex & signal, TH1D & hist, double weight, int pdg )
 {
     auto itrPart = signal.particles_out_const_begin();
     auto endPart = signal.particles_out_const_end();
@@ -66,13 +66,13 @@ void FillHistPT( const HepMC::GenVertex & signal, TH1D & hist, int pdg )
             TLorentzVector vec = ToLorentz( part.momentum() );
 
             double pT = vec.Pt();
-            hist.Fill( pT );
+            hist.Fill( pT, weight );
         }
     }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void FillHistEta( const HepMC::GenVertex & signal, TH1D & hist, int pdg )
+void FillHistEta( const HepMC::GenVertex & signal, TH1D & hist, double weight, int pdg )
 {
     auto itrPart = signal.particles_out_const_begin();
     auto endPart = signal.particles_out_const_end();
@@ -85,13 +85,13 @@ void FillHistEta( const HepMC::GenVertex & signal, TH1D & hist, int pdg )
             TLorentzVector vec = ToLorentz( part.momentum() );
 
             double eta = vec.Eta();
-            hist.Fill( eta );
+            hist.Fill( eta, weight );
         }
     }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void FillHistPhi( const HepMC::GenVertex & signal, TH1D & hist, int pdg )
+void FillHistPhi( const HepMC::GenVertex & signal, TH1D & hist, double weight, int pdg )
 {
     auto itrPart = signal.particles_out_const_begin();
     auto endPart = signal.particles_out_const_end();
@@ -104,13 +104,13 @@ void FillHistPhi( const HepMC::GenVertex & signal, TH1D & hist, int pdg )
             TLorentzVector vec = ToLorentz( part.momentum() );
 
             double phi = vec.Phi();
-            hist.Fill( phi );
+            hist.Fill( phi, weight );
         }
     }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void FillHistM2( const HepMC::GenVertex & signal, TH1D & hist, int pdg1, int pdg2 )
+void FillHistM2( const HepMC::GenVertex & signal, TH1D & hist, double weight, int pdg1, int pdg2 )
 {
     const HepMC::GenParticle * pPart1 = nullptr;
     const HepMC::GenParticle * pPart2 = nullptr;
@@ -142,7 +142,7 @@ void FillHistM2( const HepMC::GenVertex & signal, TH1D & hist, int pdg1, int pdg
         TLorentzVector vec  = vec1 + vec2;
 
         double mass = vec.M();
-        hist.Fill(mass);
+        hist.Fill( mass, weight );
     }
 }
 

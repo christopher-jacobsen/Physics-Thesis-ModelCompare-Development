@@ -32,7 +32,7 @@ namespace ModelCompare
 
 ////////////////////////////////////////////////////////////////////////////////
 
-typedef std::function<void(const HepMC::GenVertex & signal, TH1D & hist)> FillHistFunction;
+typedef std::function<void(const HepMC::GenVertex & signal, TH1D & hist, double weight)> FillHistFunction;
 
 struct Observable
 {
