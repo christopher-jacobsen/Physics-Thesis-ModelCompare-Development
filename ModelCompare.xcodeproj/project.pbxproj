@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		235B160E1B946F3E0009D192 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 235B160D1B946F3E0009D192 /* main.cpp */; };
+		237B133C1BA2B28F001AD590 /* ModelCompare.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 237B133A1BA2B28F001AD590 /* ModelCompare.cpp */; };
 		23EB6CC51B9C844300A8F64B /* RootUtil.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 23EB6CC31B9C844300A8F64B /* RootUtil.cpp */; };
 /* End PBXBuildFile section */
 
@@ -27,6 +28,8 @@
 		235B160A1B946F3E0009D192 /* ModelCompare */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ModelCompare; sourceTree = BUILT_PRODUCTS_DIR; };
 		235B160D1B946F3E0009D192 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		235B16141B94708E0009D192 /* common.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = common.h; path = ../../SherpaWeight/SherpaWeight/Source/Common/common.h; sourceTree = "<group>"; };
+		237B133A1BA2B28F001AD590 /* ModelCompare.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ModelCompare.cpp; sourceTree = "<group>"; };
+		237B133B1BA2B28F001AD590 /* ModelCompare.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ModelCompare.h; sourceTree = "<group>"; };
 		23EB6CC31B9C844300A8F64B /* RootUtil.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RootUtil.cpp; sourceTree = "<group>"; };
 		23EB6CC41B9C844300A8F64B /* RootUtil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RootUtil.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -62,9 +65,11 @@
 			isa = PBXGroup;
 			children = (
 				235B16141B94708E0009D192 /* common.h */,
-				235B160D1B946F3E0009D192 /* main.cpp */,
 				23EB6CC31B9C844300A8F64B /* RootUtil.cpp */,
 				23EB6CC41B9C844300A8F64B /* RootUtil.h */,
+				237B133A1BA2B28F001AD590 /* ModelCompare.cpp */,
+				237B133B1BA2B28F001AD590 /* ModelCompare.h */,
+				235B160D1B946F3E0009D192 /* main.cpp */,
 			);
 			path = ModelCompare;
 			sourceTree = "<group>";
@@ -127,6 +132,7 @@
 			files = (
 				23EB6CC51B9C844300A8F64B /* RootUtil.cpp in Sources */,
 				235B160E1B946F3E0009D192 /* main.cpp in Sources */,
+				237B133C1BA2B28F001AD590 /* ModelCompare.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
