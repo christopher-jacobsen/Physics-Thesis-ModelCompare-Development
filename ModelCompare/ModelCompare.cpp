@@ -50,7 +50,7 @@ const ColorVector FigureSetup::DefaultColors =
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-void WriteCompareFigure( const char * name, const char * title, const ConstTH1DVector & data, ConstTH1DVector & compare, const ColorVector & dataColors )
+void WriteCompareFigure( const char * name, const char * title, const ConstTH1DVector & data, const ConstTH1DVector & compare, const ColorVector & dataColors )
 {
     TCanvas canvas( name, title );
 
@@ -95,7 +95,7 @@ void WriteCompareFigure( const char * name, const char * title, const ConstTH1DV
                         Double_t chi2     = 0;
                         Int_t    ndf      = 0;
                         Int_t    igood    = 0;
-                        Double_t prob     = data[0]->Chi2TestX( pDataHist, chi2, ndf, igood );
+                        Double_t prob     = data[0]->Chi2TestX( pDataHist, chi2, ndf, igood, "WW" );
                         Double_t chi2_ndf = (ndf > 0 ? chi2 / ndf : 0.0);
 
                         char label[200];
@@ -421,7 +421,7 @@ void ModelCompare( const char * outputFileName, const ModelFileVector & models, 
                 std::string figName  = "fig_" + std::string(obsComp[0]->GetName());
                 std::string figTitle = obsComp[0]->GetTitle();
 
-                WriteCompareFigure( figName.c_str(), figTitle.c_str(), obsData, reinterpret_cast<ConstTH1DVector &>(obsComp), figSetup.colors );
+                WriteCompareFigure( figName.c_str(), figTitle.c_str(), obsData, ToConstTH1DVector(obsComp), figSetup.colors );
             }
         }
     }

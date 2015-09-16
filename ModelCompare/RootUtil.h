@@ -42,10 +42,17 @@ typedef std::vector<const char *>   CStringVector;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+inline ConstTH1DVector ToConstTH1DVector( const TH1DVector & v )
+{
+    return ConstTH1DVector( v.cbegin(), v.cend() );
+}
+
 inline TLorentzVector ToLorentz( const HepMC::FourVector & v )
 {
     return TLorentzVector( v.x(), v.y(), v.z(), v.t() );
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 void LoadEvents( const char * eventFileName, std::function<void(const HepMC::GenVertex & signal)> EventFunc );
 
