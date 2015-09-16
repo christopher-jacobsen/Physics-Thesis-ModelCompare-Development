@@ -44,6 +44,16 @@ struct Observable
     const char *        xAxisTitle;
     const char *        yAxisTitle;
     FillHistFunction    fillFunction;
+
+    // force all fields to be filled on construction
+    Observable( const char * name, const char * title, Int_t nBins, Double_t min, Double_t max,
+                const char * xAxisTitle, const char * yAxisTitle,
+                const FillHistFunction & fillFunction )
+      : name(name), title(title), nBins(nBins), min(min), max(max),
+        xAxisTitle(xAxisTitle), yAxisTitle(yAxisTitle),
+        fillFunction(fillFunction)
+    {
+    }
 };
 
 typedef std::vector<Observable> ObservableVector;
@@ -55,7 +65,17 @@ struct ModelFile
     const char *    fileName;
     const char *    modelName;
     const char *    modelTitle;
-    double          crossSection;  // in pb
+    double          crossSection;       // in pb
+    double          crossSectionError;  // in pb
+    size_t          crossSectionEvents;
+
+    // force all fields to be set on construction
+    ModelFile( const char * fileName, const char * modelName, const char * modelTitle,
+               double crossSection, double crossSectionError, size_t crossSectionEvents )
+      : fileName(fileName), modelName(modelName), modelTitle(modelTitle),
+        crossSection(crossSection), crossSectionError(crossSectionError), crossSectionEvents(crossSectionEvents)
+    {
+    }
 };
 
 typedef std::vector<ModelFile>  ModelFileVector;
@@ -84,7 +104,7 @@ typedef std::vector<FigureSetup> FigureSetupVector;
 ////////////////////////////////////////////////////////////////////////////////
 
 void WriteCompareFigure( const char * name, const char * title,
-                         const RootUtil::ConstTH1DVector & data, RootUtil::ConstTH1DVector & compare,
+                         const RootUtil::ConstTH1DVector & data, const RootUtil::ConstTH1DVector & compare,
                          const RootUtil::ColorVector & dataColors );
 
 void LoadHistData( const ModelFileVector & models, const ObservableVector & observables, std::vector<RootUtil::TH1DVector> & hists );
