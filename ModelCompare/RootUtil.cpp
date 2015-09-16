@@ -21,18 +21,25 @@
 #include <HepMC/GenVertex.h>
 #include <HepMC/GenParticle.h>
 
+// Sherpa includes
+#include "Gzip_Stream.H"
+
 namespace RootUtil
 {
 
 ////////////////////////////////////////////////////////////////////////////////
 void LoadEvents( const char * eventFileName, std::function<void(const HepMC::GenVertex & signal)> EventFunc )
 {
+    std::unique_ptr<ATOOLS::igzstream>  upStream;
     std::unique_ptr<HepMC::IO_GenEvent> upInput;
 
     try
     {
         LogMsgInfo( "Input file: %hs", FMT_HS(eventFileName) );
-        upInput.reset( new HepMC::IO_GenEvent( eventFileName, std::ios::in ) );
+
+        upStream.reset( new ATOOLS::igzstream( eventFileName, std::ios::in ) );
+
+        upInput.reset( new HepMC::IO_GenEvent( *upStream.get() ) );
     }
     catch (...)
     {
