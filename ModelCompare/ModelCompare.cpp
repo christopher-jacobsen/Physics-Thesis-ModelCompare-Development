@@ -244,9 +244,6 @@ void LoadHistData( const ModelFileVector & models, const ObservableVector & obse
 
         LoadEvents( model.fileName, FillFunc );
 
-        for (const TH1D * pHist : data)
-            LogMsgUnderOverflow( *pHist );
-
         hists.push_back( data );
     }
 }
@@ -268,17 +265,19 @@ void CalculateCompareHists( const Observable & obs, const ConstTH1DVector & data
         TH1D * pHist = new TH1D( *data[i] / *pBase );
         comp.push_back(pHist);
 
+        /* add if comparing to oneself - to correct the error for being increased by sqrt(2)
         if (i == 0)
         {
             Int_t nbins = pHist->GetNbinsX();
-            for (Int_t i = 0; i <= nbins + 1; ++i)
+            for (Int_t bin = 0; bin <= nbins + 1; ++bin)
             {
-                Double_t error = pHist->GetBinError(i);
+                Double_t error = pHist->GetBinError(bin);
                 error /= std::sqrt(2);
-                pHist->SetBinError( i, error );
-                pHist->SetBinContent( i, 1.0 );
+                pHist->SetBinError( bin, error );
+                pHist->SetBinContent( bin, 1.0 );
             }
         }
+        */
 
         std::string name  = std::string(models[i].modelName)  + nameSuffix;
         std::string title = std::string(models[i].modelTitle) + titleSuffix;
@@ -290,7 +289,25 @@ void CalculateCompareHists( const Observable & obs, const ConstTH1DVector & data
         pHist->SetLineColor(   color );
         pHist->SetMarkerColor( color );
 
-        pHist->GetYaxis()->SetTitle( "Relative frequency" );
+        pHist->GetYaxis()->SetTitle( "Ratio" );
+
+        /* debug - looking at small bins
+        {
+            Int_t nbins = pHist->GetNbinsX();
+            for (Int_t bin = 1; bin <= nbins; ++bin)
+            {
+                Double_t binContent = pHist->GetBinContent(bin);
+                if ((binContent > 0) && (binContent < 0.1))
+                {
+                    LogMsgInfo( "%hs bin %i: %g (±%g) / %g (±%g) = %g (±%g)",
+                                FMT_HS(pHist->GetName()), FMT_I(bin),
+                                FMT_F(data[i]->GetBinContent(bin)), FMT_F(data[i]->GetBinError(bin)),
+                                FMT_F(pBase  ->GetBinContent(bin)), FMT_F(pBase  ->GetBinError(bin)),
+                                FMT_F(pHist  ->GetBinContent(bin)), FMT_F(pHist  ->GetBinError(bin)) );
+                }
+            }
+        }
+		*/
     }
 }
 
@@ -338,6 +355,7 @@ void ModelCompare( const char * outputFileName, const ModelFileVector & models, 
     // write observables histograms
     for ( const TH1DVector & data : modelData )
     {
+        LogMsgUnderOverflow( ToConstTH1DVector(data) );
         WriteHists( upOutputFile.get(), data );  // output file takes ownership of histograms
     }
 

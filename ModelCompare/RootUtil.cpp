@@ -79,6 +79,25 @@ void FillHistPT( const HepMC::GenVertex & signal, TH1D & hist, double weight, in
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+void FillHistRap( const HepMC::GenVertex & signal, TH1D & hist, double weight, int pdg )
+{
+    auto itrPart = signal.particles_out_const_begin();
+    auto endPart = signal.particles_out_const_end();
+    for ( ; itrPart != endPart; ++itrPart)
+    {
+        const HepMC::GenParticle & part = **itrPart;
+
+        if (part.pdg_id() == pdg)
+        {
+            TLorentzVector vec = ToLorentz( part.momentum() );
+
+            double eta = vec.Rapidity();
+            hist.Fill( eta, weight );
+        }
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 void FillHistEta( const HepMC::GenVertex & signal, TH1D & hist, double weight, int pdg )
 {
     auto itrPart = signal.particles_out_const_begin();
@@ -117,7 +136,7 @@ void FillHistPhi( const HepMC::GenVertex & signal, TH1D & hist, double weight, i
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void FillHistM2( const HepMC::GenVertex & signal, TH1D & hist, double weight, int pdg1, int pdg2 )
+void FillHistMass( const HepMC::GenVertex & signal, TH1D & hist, double weight, int pdg1, int pdg2 )
 {
     const HepMC::GenParticle * pPart1 = nullptr;
     const HepMC::GenParticle * pPart2 = nullptr;
@@ -160,10 +179,20 @@ void LogMsgUnderOverflow( const TH1D & hist )
     Double_t overflow  = hist.GetBinContent( hist.GetNbinsX() + 1 );
 
     if (underflow != 0)
-        LogMsgInfo( "Underflow of %f in %hs", FMT_F(underflow), FMT_HS(hist.GetName()) );
+        LogMsgInfo( "Underflow in %hs of %g", FMT_HS(hist.GetName()), FMT_F(underflow) );
 
     if (overflow != 0)
-        LogMsgInfo( "Overflow of %f in %hs", FMT_F(overflow), FMT_HS(hist.GetName()) );
+        LogMsgInfo( "Overflow in %hs of %g", FMT_HS(hist.GetName()), FMT_F(overflow) );
+}
+
+////////////////////////////////////////////////////////////////////////////////
+void LogMsgUnderOverflow( const ConstTH1DVector & hists )
+{
+    for (const TH1D * pHist : hists)
+    {
+        if (pHist)
+            LogMsgUnderOverflow( *pHist );
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

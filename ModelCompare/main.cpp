@@ -19,10 +19,11 @@ using namespace ModelCompare;
 
 static const ObservableVector Observables1 =
 {
-    { "PTZ", "P_{T}(Z)",  100,     0,  500, "P_{T}(Z) [GeV/c]", "Events per 5 GeV/c",       [](const HepMC::GenVertex & s, TH1D & h, double w) { FillHistPT( s, h, w, 24);     } },
-    { "MWZ", "M(WZ)",     100,     0, 1500, "M(WZ) [GeV/c^2]",  "Events per 15 GeV/c^2",    [](const HepMC::GenVertex & s, TH1D & h, double w) { FillHistM2( s, h, w, 24, 23); } },
-    { "ETZ", "#eta(Z)",   100,   -10,   10, "#eta(Z)",          "Events per bin",           [](const HepMC::GenVertex & s, TH1D & h, double w) { FillHistEta(s, h, w, 24);     } },
-    { "PHZ", "#phi(Z)",   100, -M_PI, M_PI, "#phi(Z)",          "Events per bin",           [](const HepMC::GenVertex & s, TH1D & h, double w) { FillHistPhi(s, h, w, 24);     } },
+    { "PTZ", "P_{T}(Z)",  100,     0,  500, "P_{T}(Z) [GeV/c]", "Events per 5 GeV/c",       [](const HepMC::GenVertex & s, TH1D & h, double w) { FillHistPT(  s, h, w, 24);     } },
+    { "MWZ", "M(WZ)",     100,     0, 1500, "M(WZ) [GeV/c^2]",  "Events per 15 GeV/c^2",    [](const HepMC::GenVertex & s, TH1D & h, double w) { FillHistMass(s, h, w, 24, 23); } },
+    { "RAZ", "Y(Z)",      100,   -10,   10, "Y(Z)",             "Events per bin",           [](const HepMC::GenVertex & s, TH1D & h, double w) { FillHistRap( s, h, w, 24);     } },
+    { "ETZ", "#eta(Z)",   100,   -10,   10, "#eta(Z)",          "Events per bin",           [](const HepMC::GenVertex & s, TH1D & h, double w) { FillHistEta( s, h, w, 24);     } },
+    { "PHZ", "#phi(Z)",   100, -M_PI, M_PI, "#phi(Z)",          "Events per bin",           [](const HepMC::GenVertex & s, TH1D & h, double w) { FillHistPhi( s, h, w, 24);     } },
 };
 
 ////////////////////////////////////////////////////////////////////////////////
