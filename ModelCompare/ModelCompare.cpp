@@ -238,7 +238,7 @@ void LoadHistData( const ModelFileVector & models, const ObservableVector & obse
             size_t dataIndex = 0;
             for (const Observable & obs : observables)
             {
-                obs.fillFunction( signal, *data[dataIndex++], 1.0 );
+                obs.fillFunction( *data[dataIndex++], 1.0, signal );
             }
         };
 

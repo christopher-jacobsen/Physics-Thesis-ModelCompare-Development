@@ -60,116 +60,135 @@ void LoadEvents( const char * eventFileName, std::function<void(const HepMC::Gen
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void FillHistPT( const HepMC::GenVertex & signal, TH1D & hist, double weight, int pdg )
-{
-    auto itrPart = signal.particles_out_const_begin();
-    auto endPart = signal.particles_out_const_end();
-    for ( ; itrPart != endPart; ++itrPart)
-    {
-        const HepMC::GenParticle & part = **itrPart;
 
-        if (part.pdg_id() == pdg)
-        {
-            TLorentzVector vec = ToLorentz( part.momentum() );
-
-            double pT = vec.Pt();
-            hist.Fill( pT, weight );
-        }
-    }
-}
+typedef std::vector< const HepMC::GenParticle * > ConstGenParticleVector;
 
 ////////////////////////////////////////////////////////////////////////////////
-void FillHistRap( const HepMC::GenVertex & signal, TH1D & hist, double weight, int pdg )
+ConstGenParticleVector FindOutgoingParticles( const HepMC::GenVertex & signal, int pdg, bool bThrowNotFound /*= true*/ )
 {
-    auto itrPart = signal.particles_out_const_begin();
-    auto endPart = signal.particles_out_const_end();
-    for ( ; itrPart != endPart; ++itrPart)
-    {
-        const HepMC::GenParticle & part = **itrPart;
-
-        if (part.pdg_id() == pdg)
-        {
-            TLorentzVector vec = ToLorentz( part.momentum() );
-
-            double eta = vec.Rapidity();
-            hist.Fill( eta, weight );
-        }
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////
-void FillHistEta( const HepMC::GenVertex & signal, TH1D & hist, double weight, int pdg )
-{
-    auto itrPart = signal.particles_out_const_begin();
-    auto endPart = signal.particles_out_const_end();
-    for ( ; itrPart != endPart; ++itrPart)
-    {
-        const HepMC::GenParticle & part = **itrPart;
-
-        if (part.pdg_id() == pdg)
-        {
-            TLorentzVector vec = ToLorentz( part.momentum() );
-
-            double eta = vec.Eta();
-            hist.Fill( eta, weight );
-        }
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////
-void FillHistPhi( const HepMC::GenVertex & signal, TH1D & hist, double weight, int pdg )
-{
-    auto itrPart = signal.particles_out_const_begin();
-    auto endPart = signal.particles_out_const_end();
-    for ( ; itrPart != endPart; ++itrPart)
-    {
-        const HepMC::GenParticle & part = **itrPart;
-
-        if (part.pdg_id() == pdg)
-        {
-            TLorentzVector vec = ToLorentz( part.momentum() );
-
-            double phi = vec.Phi();
-            hist.Fill( phi, weight );
-        }
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////
-void FillHistMass( const HepMC::GenVertex & signal, TH1D & hist, double weight, int pdg1, int pdg2 )
-{
-    const HepMC::GenParticle * pPart1 = nullptr;
-    const HepMC::GenParticle * pPart2 = nullptr;
+    ConstGenParticleVector result;
 
     auto itrPart = signal.particles_out_const_begin();
     auto endPart = signal.particles_out_const_end();
     for ( ; itrPart != endPart; ++itrPart)
     {
         const HepMC::GenParticle * pPart = *itrPart;
-
-        int part_pdg = pPart->pdg_id();
-
-        if (part_pdg == pdg1)
-        {
-            pPart1 = pPart;
-            continue;
-        }
-        if (part_pdg == pdg2)
-        {
-            pPart2 = pPart;
-            continue;
-        }
+        if (pPart && (pPart->pdg_id() == pdg))
+            result.push_back( pPart );
     }
 
-    if (pPart1 && pPart2)
+    if (bThrowNotFound && result.empty())
+        ThrowError( "No outgoing particle with pdg code: " + std::to_string(pdg) );
+
+    return result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+const HepMC::GenParticle * FindSingleOutgoingParticle( const HepMC::GenVertex & signal, int pdg, bool bThrowNotFound /*= true*/ )
+{
+    const HepMC::GenParticle * result = nullptr;
+
+    auto itrPart = signal.particles_out_const_begin();
+    auto endPart = signal.particles_out_const_end();
+    for ( ; itrPart != endPart; ++itrPart)
     {
-        TLorentzVector vec1 = ToLorentz( pPart1->momentum() );
-        TLorentzVector vec2 = ToLorentz( pPart2->momentum() );
-        TLorentzVector vec  = vec1 + vec2;
-
-        double mass = vec.M();
-        hist.Fill( mass, weight );
+        const HepMC::GenParticle * pPart = *itrPart;
+        if (pPart && (pPart->pdg_id() == pdg))
+        {
+            if (result == nullptr)
+                result = pPart;
+            else
+                ThrowError( "Multiple outgoing particles with pdg code: " + std::to_string(pdg) );
+        }
     }
+
+    if (bThrowNotFound && !result)
+        ThrowError( "No outgoing particle with pdg code: " + std::to_string(pdg) );
+
+    return result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+double GetObsPT( const HepMC::GenVertex & signal, int pdg )
+{
+    const HepMC::GenParticle * pPart = FindSingleOutgoingParticle( signal, pdg );
+
+    TLorentzVector vec = ToLorentz( pPart->momentum() );
+
+    return vec.Pt();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+double GetObsRap( const HepMC::GenVertex & signal, int pdg )
+{
+    const HepMC::GenParticle * pPart = FindSingleOutgoingParticle( signal, pdg );
+
+    TLorentzVector vec = ToLorentz( pPart->momentum() );
+
+    return vec.Rapidity();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+double GetObsEta( const HepMC::GenVertex & signal, int pdg )
+{
+    const HepMC::GenParticle * pPart = FindSingleOutgoingParticle( signal, pdg );
+
+    TLorentzVector vec = ToLorentz( pPart->momentum() );
+
+    return vec.Eta();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+double GetObsPhi( const HepMC::GenVertex & signal, int pdg )
+{
+    const HepMC::GenParticle * pPart = FindSingleOutgoingParticle( signal, pdg );
+
+    TLorentzVector vec = ToLorentz( pPart->momentum() );
+
+    return vec.Phi();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+double GetObsMass( const HepMC::GenVertex & signal, int pdg1, int pdg2 )
+{
+    const HepMC::GenParticle * pPart1 = FindSingleOutgoingParticle( signal, pdg1 );
+    const HepMC::GenParticle * pPart2 = FindSingleOutgoingParticle( signal, pdg2 );
+
+    TLorentzVector vec1 = ToLorentz( pPart1->momentum() );
+    TLorentzVector vec2 = ToLorentz( pPart2->momentum() );
+    TLorentzVector vec  = vec1 + vec2;
+
+    return vec.M();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+void FillHistPT( TH1D & hist, double weight, const HepMC::GenVertex & signal, int pdg )
+{
+    hist.Fill( GetObsPT( signal, pdg ), weight );
+}
+
+////////////////////////////////////////////////////////////////////////////////
+void FillHistRap( TH1D & hist, double weight, const HepMC::GenVertex & signal, int pdg )
+{
+    hist.Fill( GetObsRap( signal, pdg ), weight );
+}
+
+////////////////////////////////////////////////////////////////////////////////
+void FillHistEta( TH1D & hist, double weight, const HepMC::GenVertex & signal, int pdg )
+{
+    hist.Fill( GetObsEta( signal, pdg ), weight );
+}
+
+////////////////////////////////////////////////////////////////////////////////
+void FillHistPhi( TH1D & hist, double weight, const HepMC::GenVertex & signal, int pdg )
+{
+    hist.Fill( GetObsPhi( signal, pdg ), weight );
+}
+
+////////////////////////////////////////////////////////////////////////////////
+void FillHistMass( TH1D & hist, double weight, const HepMC::GenVertex & signal, int pdg1, int pdg2 )
+{
+    hist.Fill( GetObsMass( signal, pdg1, pdg2 ), weight );
 }
 
 ////////////////////////////////////////////////////////////////////////////////

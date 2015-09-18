@@ -26,6 +26,7 @@ class TFile;
 namespace HepMC
 {
 class GenVertex;
+class GenParticle;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -39,6 +40,8 @@ typedef std::vector<const TH1D *>   ConstTH1DVector;
 typedef std::vector<TH1D *>         TH1DVector;
 typedef std::vector<Color_t>        ColorVector;
 typedef std::vector<const char *>   CStringVector;
+
+typedef std::vector< const HepMC::GenParticle * > ConstGenParticleVector;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -56,11 +59,20 @@ inline TLorentzVector ToLorentz( const HepMC::FourVector & v )
 
 void LoadEvents( const char * eventFileName, std::function<void(const HepMC::GenVertex & signal)> EventFunc );
 
-void FillHistPT(   const HepMC::GenVertex & signal, TH1D & hist, double weight, int pdg );
-void FillHistRap(  const HepMC::GenVertex & signal, TH1D & hist, double weight, int pdg );
-void FillHistEta(  const HepMC::GenVertex & signal, TH1D & hist, double weight, int pdg );
-void FillHistPhi(  const HepMC::GenVertex & signal, TH1D & hist, double weight, int pdg );
-void FillHistMass( const HepMC::GenVertex & signal, TH1D & hist, double weight, int pdg1, int pdg2 );
+ConstGenParticleVector     FindOutgoingParticles(      const HepMC::GenVertex & signal, int pdg, bool bThrowNotFound = true );
+const HepMC::GenParticle * FindSingleOutgoingParticle( const HepMC::GenVertex & signal, int pdg, bool bThrowNotFound = true );
+
+double GetObsPT(   const HepMC::GenVertex & signal, int pdg );
+double GetObsRap(  const HepMC::GenVertex & signal, int pdg );
+double GetObsEta(  const HepMC::GenVertex & signal, int pdg );
+double GetObsPhi(  const HepMC::GenVertex & signal, int pdg );
+double GetObsMass( const HepMC::GenVertex & signal, int pdg1, int pdg2 );
+
+void FillHistPT(   TH1D & hist, double weight, const HepMC::GenVertex & signal, int pdg );
+void FillHistRap(  TH1D & hist, double weight, const HepMC::GenVertex & signal, int pdg );
+void FillHistEta(  TH1D & hist, double weight, const HepMC::GenVertex & signal, int pdg );
+void FillHistPhi(  TH1D & hist, double weight, const HepMC::GenVertex & signal, int pdg );
+void FillHistMass( TH1D & hist, double weight, const HepMC::GenVertex & signal, int pdg1, int pdg2 );
 
 void LogMsgUnderOverflow( const TH1D & hist );
 void LogMsgUnderOverflow( const ConstTH1DVector & hists );
