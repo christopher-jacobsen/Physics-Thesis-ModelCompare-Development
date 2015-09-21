@@ -14,6 +14,7 @@
 // Root includes
 #include <TFile.h>
 #include <TH1.h>
+#include <TProfile.h>
 #include <TCanvas.h>
 #include <TLegend.h>
 #include <TLine.h>
@@ -28,6 +29,50 @@ using namespace RootUtil;
 
 namespace ModelCompare
 {
+
+////////////////////////////////////////////////////////////////////////////////
+
+std::string Observable::BuildHistName(  const char * namePrefix  /*= nullptr*/, const char * nameSuffix  /*= nullptr*/ ) const
+{
+    std::string sName;
+
+    if (namePrefix && namePrefix[0]) { sName += namePrefix; sName += "_"; }
+    sName += this->name;
+    if (nameSuffix && nameSuffix[0]) { sName += "_"; sName += nameSuffix; }
+
+    return sName;
+}
+
+std::string Observable::BuildHistTitle( const char * titlePrefix /*= nullptr*/, const char * titleSuffix /*= nullptr*/ ) const
+{
+    std::string sTitle;
+
+    if (titlePrefix && titlePrefix[0]) { sTitle += titlePrefix; sTitle += " - "; }
+    sTitle += this->title;
+    if (titleSuffix && titleSuffix[0]) { sTitle += " - "; sTitle += titleSuffix; }
+
+    return sTitle;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+TH1D * DefaultTH1DFactory( const Observable & obs, const char * name, const char * title )
+{
+    TH1D * pHist = new TH1D( name, title, obs.nBins, obs.xMin, obs.xMax );
+
+    SetupHist( *pHist, obs.xAxisTitle, obs.yAxisTitle );
+
+    return pHist;
+}
+
+TH1D * DefaultTProfileFactory( const Observable & obs, const char * name, const char * title )
+{
+    TProfile * pHist = new TProfile( name, title, obs.nBins, obs.xMin, obs.xMax );
+
+    SetupHist( *pHist, obs.xAxisTitle, obs.yAxisTitle );
+
+    return pHist;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -52,6 +97,9 @@ const ColorVector FigureSetup::DefaultColors =
 ////////////////////////////////////////////////////////////////////////////////
 void WriteCompareFigure( const char * name, const char * title, const ConstTH1DVector & data, const ConstTH1DVector & compare, const ColorVector & dataColors )
 {
+    // ensure local hists are deleted
+    std::list< std::unique_ptr<TH1D> > cleanupHists;
+
     TCanvas canvas( name, title );
 
     canvas.Divide(1,2); // divide canvas into an upper and lower pad
@@ -144,18 +192,16 @@ void WriteCompareFigure( const char * name, const char * title, const ConstTH1DV
             for (size_t i = 0; i < compare.size(); ++i)
             {
                 const TH1D * pDrawHist = drawHists[i];
+                const TH1D * pCompHist = compare[i];
 
                 pLegend->AddEntry( pDrawHist, pDrawHist->GetTitle() );
 
-                TH1D histLocal( *compare[i] );
-                histLocal.SetDirectory( nullptr );  // ensure not owned by any directory
-
                 // count non-empty bins for NDF used below
-                Int_t nBins     = histLocal.GetNbinsX();
+                Int_t nBins     = pCompHist->GetNbinsX();
                 Int_t nBinsFull = 0;
                 for (Int_t i = 1; i <= nBins; ++i)
                 {
-                    if (histLocal.GetBinContent(i) != 0.0)
+                    if (pCompHist->GetBinContent(i) != 0.0)
                         ++nBinsFull;
                 }
 
@@ -165,7 +211,7 @@ void WriteCompareFigure( const char * name, const char * title, const ConstTH1DV
                 {
                     TF1 horz1( "horz1", "1.0" );
 
-                    Double_t chi2     = histLocal.Chisquare( &horz1 );
+                    Double_t chi2     = pCompHist->Chisquare( &horz1 );
                     Int_t    ndf      = nBinsFull;
                     Double_t prob     = (ndf > 0 ? TMath::Prob( chi2, ndf ) : 0.0);
                     Double_t chi2_ndf = (ndf > 0 ? chi2 / ndf : 0.0);
@@ -183,7 +229,11 @@ void WriteCompareFigure( const char * name, const char * title, const ConstTH1DV
 
                     horz.SetParameter( 0, 1.0 );
 
-                    int fitStatus = histLocal.Fit( &horz, "NQM" );
+                    TH1D * pFitHist = (TH1D *)pCompHist->Clone();               // clone hist as Fit is not const
+                    pFitHist->SetDirectory( nullptr );                          // ensure not owned by any directory
+                    cleanupHists.push_back( std::unique_ptr<TH1D>(pFitHist) );  // ensure cleaned up
+
+                    int fitStatus = pFitHist->Fit( &horz, "NQM" );
                     if ((int)fitStatus >= 0)
                     {
                         Double_t chi2     = horz.GetChisquare();
@@ -224,12 +274,7 @@ void LoadHistData( const ModelFileVector & models, const ObservableVector & obse
 
         for (const Observable & obs : observables)
         {
-            TH1D * pHist = new TH1D( (std::string(model.modelName) + "_" + obs.name).c_str(),
-                                     (std::string(model.modelTitle) + " - " + obs.title).c_str(),
-                                     obs.nBins, obs.min, obs.max );
-
-            SetupHist( *pHist, obs.xAxisTitle, obs.yAxisTitle );
-
+            TH1D * pHist = obs.MakeHist( model.modelName, model.modelTitle );
             data.push_back( pHist );
         }
 
@@ -262,7 +307,11 @@ void CalculateCompareHists( const Observable & obs, const ConstTH1DVector & data
 
     for ( size_t i = 1; i < data.size(); ++i)
     {
-        TH1D * pHist = new TH1D( *data[i] / *pBase );
+        TH1D * pHist = (TH1D *)data[i]->Clone();  // polymorphic clone
+        pHist->SetDirectory( nullptr );           // ensure not owned by any directory
+
+        pHist->Divide( pBase );
+
         comp.push_back(pHist);
 
         /* add if comparing to oneself - to correct the error for being increased by sqrt(2)

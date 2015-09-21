@@ -30,30 +30,65 @@ class GenVertex;
 namespace ModelCompare
 {
 
+struct Observable;
+
 ////////////////////////////////////////////////////////////////////////////////
 
-typedef std::function<void(TH1D & hist, double weight, const HepMC::GenVertex & signal)> FillHistFunction;
+typedef void FillHistFunctionType(TH1D & hist, double weight, const HepMC::GenVertex & signal);
+typedef std::function< FillHistFunctionType  > FillHistFunction;
+
+typedef TH1D * TH1DFactoryFunctionType( const Observable & obs, const char * name, const char * title );
+typedef std::function< TH1DFactoryFunctionType > TH1DFactoryFunction;
+
+TH1DFactoryFunctionType DefaultTH1DFactory;
+TH1DFactoryFunctionType DefaultTProfileFactory;
 
 struct Observable
 {
-    const char *        name;
-    const char *        title;
-    Int_t               nBins;
-    Double_t            min;
-    Double_t            max;
-    const char *        xAxisTitle;
-    const char *        yAxisTitle;
-    FillHistFunction    fillFunction;
+    const char *            name;
+    const char *            title;
+    Int_t                   nBins;
+    Double_t                xMin;
+    Double_t                xMax;
+    const char *            xAxisTitle;
+    const char *            yAxisTitle;
+    FillHistFunction        fillFunction;
+    TH1DFactoryFunction     factoryFunction = DefaultTH1DFactory;
 
-    // force all fields to be filled on construction
-    Observable( const char * name, const char * title, Int_t nBins, Double_t min, Double_t max,
+    // force required fields to be filled on construction
+    Observable( const char * name, const char * title, Int_t nBins, Double_t xMin, Double_t xMax,
                 const char * xAxisTitle, const char * yAxisTitle,
                 const FillHistFunction & fillFunction )
-      : name(name), title(title), nBins(nBins), min(min), max(max),
+      : name(name), title(title), nBins(nBins), xMin(xMin), xMax(xMax),
         xAxisTitle(xAxisTitle), yAxisTitle(yAxisTitle),
         fillFunction(fillFunction)
     {
     }
+
+    Observable( const char * name, const char * title, Int_t nBins, Double_t xMin, Double_t xMax,
+                const char * xAxisTitle, const char * yAxisTitle,
+                const FillHistFunction & fillFunction,
+                const TH1DFactoryFunction & factoryFunction )
+      : name(name), title(title), nBins(nBins), xMin(xMin), xMax(xMax),
+        xAxisTitle(xAxisTitle), yAxisTitle(yAxisTitle),
+        fillFunction(fillFunction), factoryFunction(factoryFunction)
+    {
+    }
+
+    TH1D * MakeHist( const char * namePrefix = nullptr, const char * titlePrefix = nullptr,
+                     const char * nameSuffix = nullptr, const char * titleSuffix = nullptr ) const
+    {
+        std::string sName  = BuildHistName(  namePrefix,  nameSuffix );
+        std::string sTitle = BuildHistTitle( titlePrefix, titleSuffix );
+
+        if (factoryFunction == nullptr)
+            return DefaultTH1DFactory( *this, sName.c_str(), sTitle.c_str() );
+
+        return factoryFunction( *this, sName.c_str(), sTitle.c_str() );
+    }
+
+    std::string BuildHistName(  const char * namePrefix  = nullptr, const char * nameSuffix  = nullptr ) const;
+    std::string BuildHistTitle( const char * titlePrefix = nullptr, const char * titleSuffix = nullptr ) const;
 };
 
 typedef std::vector<Observable> ObservableVector;
