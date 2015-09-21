@@ -404,7 +404,7 @@ void ModelCompare( const char * outputFileName, const ModelFileVector & models, 
     // write observables histograms
     for ( const TH1DVector & data : modelData )
     {
-        LogMsgUnderOverflow( ToConstTH1DVector(data) );
+        LogMsgHistUnderOverflow( ToConstTH1DVector(data) );
         WriteHists( upOutputFile.get(), data );  // output file takes ownership of histograms
     }
 

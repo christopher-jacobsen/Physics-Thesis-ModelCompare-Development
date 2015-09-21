@@ -60,10 +60,6 @@ void LoadEvents( const char * eventFileName, std::function<void(const HepMC::Gen
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
-typedef std::vector< const HepMC::GenParticle * > ConstGenParticleVector;
-
-////////////////////////////////////////////////////////////////////////////////
 ConstGenParticleVector FindOutgoingParticles( const HepMC::GenVertex & signal, int pdg, bool bThrowNotFound /*= true*/ )
 {
     ConstGenParticleVector result;
@@ -192,26 +188,41 @@ void FillHistMass( TH1D & hist, double weight, const HepMC::GenVertex & signal, 
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void LogMsgUnderOverflow( const TH1D & hist )
+void LogMsgHistUnderOverflow( const TH1D & hist )
 {
     Double_t underflow = hist.GetBinContent(0);
     Double_t overflow  = hist.GetBinContent( hist.GetNbinsX() + 1 );
 
-    if (underflow != 0)
-        LogMsgInfo( "Underflow in %hs of %g", FMT_HS(hist.GetName()), FMT_F(underflow) );
-
-    if (overflow != 0)
-        LogMsgInfo( "Overflow in %hs of %g", FMT_HS(hist.GetName()), FMT_F(overflow) );
+    if ((underflow != 0) || (overflow != 0))
+        LogMsgInfo( "%hs: under|overflow = %g | %g", FMT_HS(hist.GetName()), FMT_F(underflow), FMT_F(overflow) );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void LogMsgUnderOverflow( const ConstTH1DVector & hists )
+void LogMsgHistUnderOverflow( const ConstTH1DVector & hists )
 {
     for (const TH1D * pHist : hists)
     {
         if (pHist)
-            LogMsgUnderOverflow( *pHist );
+            LogMsgHistUnderOverflow( *pHist );
     }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+void LogMsgHistStats( const TH1D & hist )
+{
+   // size of statistics data (size of array used in GetStats()/ PutStats)
+   // s[0]  = sumw       s[1]  = sumw2
+   // s[2]  = sumwx      s[3]  = sumwx2                     
+   // s[4]  = sumwy      s[5]  = sumwy2   s[6]  = sumwxy
+   // s[7]  = sumwz      s[8]  = sumwz2   s[9]  = sumwxz   s[10]  = sumwyz  
+   // s[11] = sumwt      s[12] = sumwt2  (11 and 12 used only by TProfile3D)
+
+    Double_t stats[TH1::kNstat];
+    hist.GetStats( stats );
+
+    LogMsgInfo( "%hs: sumw=%g sumw2=%g sumwx=%g sumwx2=%g sumwy=%g sumwy2=%g", FMT_HS(hist.GetName()),
+                FMT_F(stats[0]), FMT_F(stats[1]), FMT_F(stats[2]), FMT_F(stats[3]),     // TH1D and TProfile
+                FMT_F(stats[4]), FMT_F(stats[5]) );                                     // TProfile
 }
 
 ////////////////////////////////////////////////////////////////////////////////

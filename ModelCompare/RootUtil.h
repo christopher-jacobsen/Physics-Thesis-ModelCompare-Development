@@ -74,8 +74,14 @@ void FillHistEta(  TH1D & hist, double weight, const HepMC::GenVertex & signal, 
 void FillHistPhi(  TH1D & hist, double weight, const HepMC::GenVertex & signal, int pdg );
 void FillHistMass( TH1D & hist, double weight, const HepMC::GenVertex & signal, int pdg1, int pdg2 );
 
-void LogMsgUnderOverflow( const TH1D & hist );
-void LogMsgUnderOverflow( const ConstTH1DVector & hists );
+////////////////////////////////////////////////////////////////////////////////
+
+void LogMsgHistUnderOverflow( const TH1D & hist );
+void LogMsgHistUnderOverflow( const ConstTH1DVector & hists );
+
+void LogMsgHistStats( const TH1D & hist );
+
+////////////////////////////////////////////////////////////////////////////////
 
 void SetupHist( TH1D & hist, const char * xAxisTitle, const char * yAxisTitle,
                 Color_t lineColor = -1, Color_t markerColor = -1, Color_t fillColor = -1 );
