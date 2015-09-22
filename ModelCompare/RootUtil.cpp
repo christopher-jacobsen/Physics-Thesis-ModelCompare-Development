@@ -12,6 +12,7 @@
 #include <TLorentzVector.h>
 #include <TFile.h>
 #include <TH1.h>
+#include <TProfile.h>
 #include <TCanvas.h>
 #include <THistPainter.h>
 
@@ -226,14 +227,46 @@ void LogMsgHistStats( const TH1D & hist )
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TH1D * ConvertTProfileToTH1D( const TH1D * pProfile, bool bDeleteProfile )
+{
+    TH1D * pHist = nullptr;
+
+    if (pProfile->InheritsFrom(TProfile::Class()))
+    {
+        // create a new TH1D from the TProfile
+        pHist = ((TProfile *)pProfile)->ProjectionX("");  // do not add a suffix
+
+        SetupHist( *pHist );
+
+        if (bDeleteProfile)
+            delete pProfile;
+    }
+    else
+    {
+        // clone the TH1D
+
+        if (bDeleteProfile)
+            pHist = const_cast<TH1D *>(pProfile);   // quick clone: just return the input object
+        else
+            pHist = (TH1D *)pProfile->Clone();
+    }
+
+    pHist->SetDirectory( nullptr );     // ensure not owned by any directory
+
+    return pHist;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 void SetupHist( TH1D & hist, const char * xAxisTitle, const char * yAxisTitle,
                 Color_t lineColor /*= -1*/, Color_t markerColor /*= -1*/, Color_t fillColor /*= -1*/ )
 {
     hist.Sumw2();
     hist.SetStats( kFALSE );
 
-    hist.GetXaxis()->SetTitle( xAxisTitle );
-    hist.GetYaxis()->SetTitle( yAxisTitle );
+    if (xAxisTitle)
+        hist.GetXaxis()->SetTitle( xAxisTitle );
+    if (yAxisTitle)
+        hist.GetYaxis()->SetTitle( yAxisTitle );
 
     if (lineColor >= 0)
         hist.SetLineColor( lineColor );

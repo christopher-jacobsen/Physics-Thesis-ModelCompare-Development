@@ -83,7 +83,9 @@ void LogMsgHistStats( const TH1D & hist );
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void SetupHist( TH1D & hist, const char * xAxisTitle, const char * yAxisTitle,
+TH1D * ConvertTProfileToTH1D( const TH1D * pProfile, bool bDeleteProfile );
+
+void SetupHist( TH1D & hist, const char * xAxisTitle = nullptr, const char * yAxisTitle = nullptr,
                 Color_t lineColor = -1, Color_t markerColor = -1, Color_t fillColor = -1 );
 
 void WriteHists( TFile * pFile, const TH1DVector & hists );
