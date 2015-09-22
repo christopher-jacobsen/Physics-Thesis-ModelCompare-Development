@@ -94,18 +94,19 @@ const ColorVector FigureSetup::DefaultColors =
     // TODO: try TColor::GetColorDark(kGreen) [need to call TColor::InitializeColors() first, or construct a TColor object]
 };
 
+typedef std::unique_ptr<TH1D> TH1DUniquePtr;
+
 ////////////////////////////////////////////////////////////////////////////////
 void WriteCompareFigure( const char * name, const char * title, const ConstTH1DVector & data, const ConstTH1DVector & compare, const ColorVector & dataColors )
 {
-    // ensure local hists are deleted
-    std::list< std::unique_ptr<TH1D> > cleanupHists;
-
     TCanvas canvas( name, title );
 
     canvas.Divide(1,2); // divide canvas into an upper and lower pad
     
     // draw upper pad
     {
+        LogMsgInfo( "\n--- %hs : pad 1 ---", FMT_HS(name) );
+
         canvas.cd(1);
 
         TH1DVector drawHists = DrawMultipleHist( title, data, dataColors );
@@ -125,8 +126,6 @@ void WriteCompareFigure( const char * name, const char * title, const ConstTH1DV
 
                 if (i != 0)
                 {
-                    LogMsgInfo( "\n--- %hs : pad 1 ---", FMT_HS(name) );
-
                     // add Kolmogorov probability
                     {
                         Double_t prob = data[0]->KolmogorovTest( pDataHist );
@@ -162,6 +161,8 @@ void WriteCompareFigure( const char * name, const char * title, const ConstTH1DV
 
     // draw lower pad
     {
+        LogMsgInfo( "\n--- %hs : pad 2 ---", FMT_HS(name) );
+
         canvas.cd(2);
 
         // draw the histograms
@@ -205,8 +206,6 @@ void WriteCompareFigure( const char * name, const char * title, const ConstTH1DV
                         ++nBinsFull;
                 }
 
-                LogMsgInfo( "\n--- %hs : pad 2 ---", FMT_HS(name) );
-
                 // add a fit to a horizontal line at y=1.0
                 {
                     TF1 horz1( "horz1", "1.0" );
@@ -229,9 +228,8 @@ void WriteCompareFigure( const char * name, const char * title, const ConstTH1DV
 
                     horz.SetParameter( 0, 1.0 );
 
-                    TH1D * pFitHist = (TH1D *)pCompHist->Clone();               // clone hist as Fit is not const
-                    pFitHist->SetDirectory( nullptr );                          // ensure not owned by any directory
-                    cleanupHists.push_back( std::unique_ptr<TH1D>(pFitHist) );  // ensure cleaned up
+                    TH1DUniquePtr pFitHist{ (TH1D *)pCompHist->Clone() };   // clone hist as Fit is not const
+                    pFitHist->SetDirectory( nullptr );                      // ensure not owned by any directory
 
                     int fitStatus = pFitHist->Fit( &horz, "NQM" );
                     if ((int)fitStatus >= 0)
@@ -300,17 +298,16 @@ void CalculateCompareHists( const Observable & obs, const ConstTH1DVector & data
 
     // calculate comparison histograms
 
-    const TH1D * pBase = data.front();
+    std::unique_ptr<const TH1D> upBase( ConvertTProfileToTH1D( data.front(), false ) );
 
     std::string nameSuffix  = "_vs_" + std::string(models[0].modelName) + "_" + std::string(obs.name);
     std::string titleSuffix = " vs " + std::string(models[0].modelTitle) + " - " + obs.title;
 
     for ( size_t i = 1; i < data.size(); ++i)
     {
-        TH1D * pHist = (TH1D *)data[i]->Clone();  // polymorphic clone
-        pHist->SetDirectory( nullptr );           // ensure not owned by any directory
+        TH1D * pHist = ConvertTProfileToTH1D( data[i], false );
 
-        pHist->Divide( pBase );
+        pHist->Divide( upBase.get() );
 
         comp.push_back(pHist);
 
@@ -339,24 +336,6 @@ void CalculateCompareHists( const Observable & obs, const ConstTH1DVector & data
         pHist->SetMarkerColor( color );
 
         pHist->GetYaxis()->SetTitle( "Ratio" );
-
-        /* debug - looking at small bins
-        {
-            Int_t nbins = pHist->GetNbinsX();
-            for (Int_t bin = 1; bin <= nbins; ++bin)
-            {
-                Double_t binContent = pHist->GetBinContent(bin);
-                if ((binContent > 0) && (binContent < 0.1))
-                {
-                    LogMsgInfo( "%hs bin %i: %g (±%g) / %g (±%g) = %g (±%g)",
-                                FMT_HS(pHist->GetName()), FMT_I(bin),
-                                FMT_F(data[i]->GetBinContent(bin)), FMT_F(data[i]->GetBinError(bin)),
-                                FMT_F(pBase  ->GetBinContent(bin)), FMT_F(pBase  ->GetBinError(bin)),
-                                FMT_F(pHist  ->GetBinContent(bin)), FMT_F(pHist  ->GetBinError(bin)) );
-                }
-            }
-        }
-		*/
     }
 }
 
@@ -374,7 +353,7 @@ void ModelCompare( const char * outputFileName, const ModelFileVector & models, 
         ThrowError( std::invalid_argument( outputFileName ) );
     }
 
-    std::vector< std::unique_ptr<TH1D> > tempHists;
+    std::vector< TH1DUniquePtr > tempHists;
 
     // determine which model files are to be loaded
 
@@ -461,7 +440,7 @@ void ModelCompare( const char * outputFileName, const ModelFileVector & models, 
 
                     pHist = pClone;  // replace histogram in obsData
 
-                    tempHists.push_back( std::unique_ptr<TH1D>(pClone) );
+                    tempHists.push_back( TH1DUniquePtr(pClone) );
                 }
             }
         }
