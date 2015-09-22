@@ -95,100 +95,6 @@ const ColorVector FigureSetup::DefaultColors =
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-Double_t GetHistBinEffectiveEntries( const TH1D & hist, Int_t bin )
-{
-    if (hist.InheritsFrom(TProfile::Class()))
-        return static_cast<const TProfile &>(hist).GetBinEffectiveEntries(bin);
-
-    if ((bin < 0) || (bin >= hist.GetSize()))
-        return 0;
-
-    Double_t sumW = hist.GetArray()[bin];
-
-    if (bin >= hist.GetSumw2()->GetSize())
-        return sumW;
-
-    Double_t sumW2 = hist.GetSumw2()->GetArray()[bin];
-
-    Double_t nEff = (sumW2 > 0 ? sumW * sumW / sumW2 : 0);
-
-    return nEff;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-size_t HistNonEmptyBinCount( const TH1D & hist, bool bIncludeUnderOverflow = false )
-{
-    size_t nNonEmpty(0);
-
-    const Int_t first = bIncludeUnderOverflow ? 0 : 1;
-    const Int_t last  = hist.GetSize() - 1 - first;
-
-    for (Int_t bin = first; bin <= last; ++bin)
-    {
-        if (GetHistBinEffectiveEntries( hist, bin ) != 0)
-            ++nNonEmpty;
-    }
-
-    return nNonEmpty;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-size_t HistNonEmptyBinCount( const TH1D & h1, const TH1D & h2, bool bCountEitherNonEmpty = false, bool bIncludeUnderOverflow = false )
-{
-    if (h1.GetSize() != h2.GetSize())
-        ThrowError( "HistNonEmptyBinCount: histogram size mismatch." );
-
-    size_t nNonEmpty(0);
-
-    const Int_t first = bIncludeUnderOverflow ? 0 : 1;
-    const Int_t last  = h1.GetSize() - 1 - first;
-
-    for (Int_t bin = first; bin <= last; ++bin)
-    {
-        bool ne1 = (GetHistBinEffectiveEntries( h1, bin ) != 0);
-        bool ne2 = (GetHistBinEffectiveEntries( h2, bin ) != 0);
-
-        if ((ne1 && ne2) || (bCountEitherNonEmpty && (ne1 || ne2)))
-            ++nNonEmpty;
-    }
-
-    return nNonEmpty;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-void ZeroHistBin( TH1D & hist, Int_t bin )
-{
-    hist.SetBinContent( bin, 0 );
-    hist.SetBinError(   bin, 0 );
-
-    if (hist.InheritsFrom(TProfile::Class()))
-        static_cast<TProfile &>(hist).SetBinEntries( bin, 0 );
-}
-
-////////////////////////////////////////////////////////////////////////////////
-void ZeroHistEmptyBins( TH1D & h1, TH1D & h2 )
-{
-    // zero bins if either are zero
-
-    if (h1.GetSize() != h2.GetSize())
-        ThrowError( "ZeroHistEmptyBins: histogram size mismatch." );
-
-    const Int_t nSize = h1.GetSize();
-    for (Int_t bin = 0; bin < nSize; ++bin)  // include under/overflow bins
-    {
-        bool empty1 = (GetHistBinEffectiveEntries( h1, bin ) == 0);
-        bool empty2 = (GetHistBinEffectiveEntries( h2, bin ) == 0);
-
-        if (empty1 == empty2)  // both true or both false
-            continue;
-
-        ZeroHistBin( empty1 ? h2 : h1, bin );
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-typedef std::unique_ptr<TH1D> TH1DUniquePtr;
 
 struct GoodBadHists
 {
@@ -279,18 +185,6 @@ std::list<GoodBadHists> HistSplitGoodBadBins( const ConstTH1DVector & hists )
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-Double_t KolmogorovTest_NonEmptyBins( const TH1D & h1, const TH1D & h2 )
-{
-    TH1DUniquePtr p1( (TH1D *)h1.Clone() );
-    TH1DUniquePtr p2( (TH1D *)h2.Clone() );
-
-    ZeroHistEmptyBins( *p1, *p2 );  // zero bins if either are zero
-
-    // KolmogorovTest ignores bins where BOTH are zero
-    return p1->KolmogorovTest( p2.get() );
-}
-
-////////////////////////////////////////////////////////////////////////////////
 void WriteCompareFigure( const char * name, const char * title, const ConstTH1DVector & data, const ConstTH1DVector & compare, const ColorVector & dataColors )
 {
     TCanvas canvas( name, title );
@@ -352,36 +246,6 @@ void WriteCompareFigure( const char * name, const char * title, const ConstTH1DV
 
                     // add Chi2Test probability
                     {
-                        struct Chi2Result
-                        {
-                            Double_t chi2     = 0;
-                            Int_t    ndf      = 0;
-                            Int_t    igood    = 0;
-                            Double_t prob     = 0;
-                            Double_t chi2_ndf = 0;
-
-                            void Chi2Test( const TH1D & h1, const TH1D & h2 )
-                            {
-                                TH1DUniquePtr p1( (TH1D *)h1.Clone() );
-                                TH1DUniquePtr p2( (TH1D *)h2.Clone() );
-
-                                ZeroHistEmptyBins( *p1, *p2 );  // zero bins if either are zero
-
-                                LogMsgInfo( "Chi2Test(%hs, %hs): %u -> %u non-empty bins", FMT_HS(h1.GetName()), FMT_HS(h2.GetName()),
-                                            FMT_U(HistNonEmptyBinCount(h1,h2,true)), FMT_U(HistNonEmptyBinCount(*p1,*p2,true)) );
-
-                                prob     = p1->Chi2TestX( p2.get(), chi2, ndf, igood, "WW" );
-                                chi2_ndf = (ndf > 0 ? chi2 / ndf : 0.0);
-                            }
-
-                            std::string Label()
-                            {
-                                char label[200];
-                                sprintf( label, "#chi^{2}/ndf = %.4g/%i = %.3f   p-value = %0.4f", FMT_F(chi2), FMT_I(ndf), FMT_F(chi2_ndf), FMT_F(prob) );
-                                return label;
-                            }
-                        };
-
                         Chi2Result chi2All;
                         chi2All.Chi2Test( *pDataBase, *pDataHist );
 
@@ -467,7 +331,7 @@ void WriteCompareFigure( const char * name, const char * title, const ConstTH1DV
                 pLegend->AddEntry( pDrawHist, pDrawHist->GetTitle() );
 
                 size_t nNonEmptyBins = HistNonEmptyBinCount( *pCompHist );
-                LogMsgInfo( "%hs: %u[%u] non-empty bins", FMT_HS(pCompHist->GetName()), FMT_U(nNonEmptyBins) );
+                LogMsgInfo( "%hs: %u non-empty bins", FMT_HS(pCompHist->GetName()), FMT_U(nNonEmptyBins) );
 
                 // add a fit to a horizontal line at y=1.0
                 {

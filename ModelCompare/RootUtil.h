@@ -36,10 +36,14 @@ namespace RootUtil
 
 ////////////////////////////////////////////////////////////////////////////////
 
-typedef std::vector<const TH1D *>   ConstTH1DVector;
-typedef std::vector<TH1D *>         TH1DVector;
-typedef std::vector<Color_t>        ColorVector;
 typedef std::vector<const char *>   CStringVector;
+
+typedef std::vector<const TH1D *>       ConstTH1DVector;
+typedef std::vector<TH1D *>             TH1DVector;
+typedef std::vector<Color_t>            ColorVector;
+
+typedef std::unique_ptr<TH1D>           TH1DUniquePtr;
+typedef std::unique_ptr<const TH1D>     ConstTH1DUniquePtr;
 
 typedef std::vector< const HepMC::GenParticle * > ConstGenParticleVector;
 
@@ -90,10 +94,37 @@ void SetupHist( TH1D & hist, const char * xAxisTitle = nullptr, const char * yAx
 
 void WriteHists( TFile * pFile, const TH1DVector & hists );
 
-void GetHistDrawMinMax( const TH1D & hist, Double_t & ymin, Double_t & ymax );
+void GetHistDrawMinMax( const TH1D & hist,             Double_t & ymin, Double_t & ymax );
 void GetHistDrawMinMax( const ConstTH1DVector & hists, Double_t & ymin, Double_t & ymax );
 
 TH1DVector DrawMultipleHist( const char * title, const ConstTH1DVector & hists, const ColorVector & colors = {}, const CStringVector drawOptions = {} );
+
+////////////////////////////////////////////////////////////////////////////////
+
+Double_t GetHistBinEffectiveEntries( const TH1D & hist, Int_t bin );
+
+size_t HistNonEmptyBinCount( const TH1D & hist, bool bIncludeUnderOverflow = false );
+size_t HistNonEmptyBinCount( const TH1D & h1, const TH1D & h2, bool bCountEitherNonEmpty = false, bool bIncludeUnderOverflow = false );
+
+void ZeroHistBin( TH1D & hist, Int_t bin );
+void ZeroHistEmptyBins( TH1D & h1, TH1D & h2 );
+
+////////////////////////////////////////////////////////////////////////////////
+
+Double_t KolmogorovTest_NonEmptyBins( const TH1D & h1, const TH1D & h2 );
+
+struct Chi2Result
+{
+    Double_t chi2     = 0;
+    Int_t    ndf      = 0;
+    Int_t    igood    = 0;
+    Double_t prob     = 0;
+    Double_t chi2_ndf = 0;
+
+    void Chi2Test( const TH1D & h1, const TH1D & h2 );
+
+    std::string Label();
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 
