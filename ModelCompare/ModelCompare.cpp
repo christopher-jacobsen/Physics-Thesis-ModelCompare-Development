@@ -94,7 +94,274 @@ const ColorVector FigureSetup::DefaultColors =
     // TODO: try TColor::GetColorDark(kGreen) [need to call TColor::InitializeColors() first, or construct a TColor object]
 };
 
+////////////////////////////////////////////////////////////////////////////////
+Double_t GetHistBinEffectiveEntries( const TH1D & hist, Int_t bin )
+{
+    if (hist.InheritsFrom(TProfile::Class()))
+        return static_cast<const TProfile &>(hist).GetBinEffectiveEntries(bin);
+
+    if ((bin < 0) || (bin >= hist.GetSize()))
+        return 0;
+
+    Double_t sumW = hist.GetArray()[bin];
+
+    if (bin >= hist.GetSumw2()->GetSize())
+        return sumW;
+
+    Double_t sumW2 = hist.GetSumw2()->GetArray()[bin];
+
+    Double_t nEff = (sumW2 > 0 ? sumW * sumW / sumW2 : 0);
+
+    return nEff;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+size_t HistNonEmptyBinCount( const TH1D & hist, bool bIncludeUnderOverflow = false )
+{
+    size_t nNonEmpty(0);
+
+    const Int_t first = bIncludeUnderOverflow ? 0 : 1;
+    const Int_t last  = hist.GetSize() - 1 - first;
+
+    for (Int_t bin = first; bin <= last; ++bin)
+    {
+        if (GetHistBinEffectiveEntries( hist, bin ) != 0)
+            ++nNonEmpty;
+    }
+
+    return nNonEmpty;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+size_t HistNonEmptyBinCount( const TH1D & h1, const TH1D & h2, bool bCountEitherNonEmpty = false, bool bIncludeUnderOverflow = false )
+{
+    if (h1.GetSize() != h2.GetSize())
+        ThrowError( "HistNonEmptyBinCount: histogram size mismatch." );
+
+    size_t nNonEmpty(0);
+
+    const Int_t first = bIncludeUnderOverflow ? 0 : 1;
+    const Int_t last  = h1.GetSize() - 1 - first;
+
+    for (Int_t bin = first; bin <= last; ++bin)
+    {
+        bool ne1 = (GetHistBinEffectiveEntries( h1, bin ) != 0);
+        bool ne2 = (GetHistBinEffectiveEntries( h2, bin ) != 0);
+
+        if ((ne1 && ne2) || (bCountEitherNonEmpty && (ne1 || ne2)))
+            ++nNonEmpty;
+    }
+
+    return nNonEmpty;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+void ZeroHistBin( TH1D & hist, Int_t bin )
+{
+    hist.SetBinContent( bin, 0 );
+    hist.SetBinError(   bin, 0 );
+
+    if (hist.InheritsFrom(TProfile::Class()))
+        static_cast<TProfile &>(hist).SetBinEntries( bin, 0 );
+}
+
+////////////////////////////////////////////////////////////////////////////////
+void ZeroHistEmptyBins( TH1D & h1, TH1D & h2 )
+{
+    // zero bins if either are zero
+
+    if (h1.GetSize() != h2.GetSize())
+        ThrowError( "ZeroHistEmptyBins: histogram size mismatch." );
+
+    const Int_t nSize = h1.GetSize();
+    for (Int_t bin = 0; bin < nSize; ++bin)  // include under/overflow bins
+    {
+        bool empty1 = (GetHistBinEffectiveEntries( h1, bin ) == 0);
+        bool empty2 = (GetHistBinEffectiveEntries( h2, bin ) == 0);
+
+        if (empty1 == empty2)  // both true or both false
+            continue;
+
+        ZeroHistBin( empty1 ? h2 : h1, bin );
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 typedef std::unique_ptr<TH1D> TH1DUniquePtr;
+
+struct GoodBadHists
+{
+    TH1DUniquePtr   good;
+    TH1DUniquePtr   bad;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+GoodBadHists HistSplitGoodBadBins( const TH1D * pSource, const TH1D * pCompare = nullptr )
+{
+    const Double_t GoodStatMinEvents   = 10;
+    //const Double_t GoodStatMaxRelError = 1.0 / std::sqrt(GoodStatMinEvents);
+
+    if (!pSource)
+        return { nullptr, nullptr };
+
+    if (!pCompare)
+        pCompare = pSource;
+
+    const std::string sourceName( pSource->GetName() );
+
+    TH1D * pGood = (TH1D *)pSource->Clone( (sourceName + "_good").c_str() );    // polymorhic clone
+    pGood->SetDirectory( nullptr );                                             // ensure not owned by any directory
+
+    TH1D * pBad  = (TH1D *)pSource->Clone( (sourceName + "_bad").c_str() );     // polymorphic clone
+    pBad->SetDirectory( nullptr );                                              // ensure not owned by any directory
+    //pBad->Reset();                                                              // clear contents, errors, stats, etc.
+
+    /*
+    // prepare pointers
+    const TProfile * pCompProfile = dynamic_cast<TProfile *>(pCompare)
+    TProfile *       pGoodProfile = dynamic_cast<TProfile *>(pGood);
+    TProfile *       pBadProfile  = dynamic_cast<TProfile *>(pBad);
+
+    Double_t *  pGoodContent    = pGood->GetArray();
+    Double_t *  pGoodSumw2      = pGood->GetSumw2()->GetArray();
+    Double_t *  pGoodBinSumw2   = pGoodProfile ? pGoodProfile->GetBinSumw2()->GetArray() : nullptr;
+
+    Double_t *  pBadContent     = pBad->GetArray();
+    Double_t *  pBadSumw2       = pBad->GetSumw2()->GetArray();
+    Double_t *  pBadBinSumw2    = pBadProfile ? pBadProfile->GetBinSumw2()->GetArray() : nullptr;
+    */
+
+    size_t nGood(0), nBad(0), nEmpty(0);
+
+    const Int_t nSize = pCompare->GetSize();
+    for (Int_t bin = 0; bin < nSize; ++bin)  // include under/overflow bins
+    {
+        Double_t compEffEntries = GetHistBinEffectiveEntries( *pCompare, bin );
+
+        bool bGood = (compEffEntries >= GoodStatMinEvents * (1.0 - std::numeric_limits<Double_t>::epsilon()));
+
+        /*
+        if (pCompProfile)
+        {
+            // TProfile
+            bGood = (pCompProfile->GetBinEffectiveEntries(bin) >= GoodStatMinEvents);
+        }
+        else
+        {
+            // TH1D
+            Double_t compContent = pCompare->GetBinContent(bin);
+            if (compContent == 0)
+            {
+                bGood = false;
+            }
+            else
+            {
+                Double_t compError = pCompare->GetBinError(bin);
+                Double_t relError  = compError / compContent;
+
+                bGood = ( relError <= GoodStatMaxRelError * (1.0 + std::numeric_limits<Double_t>::epsilon()) );
+            }
+        }
+        */
+
+        const TH1D * pKeep =  bGood ? pGood : pBad;
+        TH1D *       pZero = !bGood ? pGood : pBad;
+
+        // if good zero bad and visa versa
+        ZeroHistBin( *pZero, bin );
+
+        Double_t     keepEffEntries = GetHistBinEffectiveEntries( *pKeep, bin );
+        const char * sType          = nullptr;
+
+        if (keepEffEntries == 0)
+        {
+            ++nEmpty;
+            sType = "Empty";
+        }
+        else if (bGood)
+        {
+            ++nGood;
+            sType = "Good";
+        }
+        else
+        {
+            ++nBad;
+            sType = "Bad";
+        }
+
+        LogMsgInfo( "%i Comp: %g (±%g)[%g]        %hs: %g (±%g)[%g]", FMT_I(bin),
+            FMT_F(pCompare->GetBinContent(bin)), FMT_F(pCompare->GetBinError(bin)), FMT_F(compEffEntries), FMT_HS(sType),
+            FMT_F(pKeep   ->GetBinContent(bin)), FMT_F(pKeep   ->GetBinError(bin)), FMT_F(keepEffEntries) );
+
+        /*
+        // move good -> bad
+
+        LogMsgInfo( "Good: %g (±%g)  Bad: %g (±%g) - before",
+            FMT_F(pGood->GetBinContent(bin)), FMT_F(pGood->GetBinError(bin)),
+            FMT_F(pBad ->GetBinContent(bin)), FMT_F(pBad ->GetBinError(bin)) );
+
+        std::swap( pGoodContent[bin], pBadContent[bin] );
+
+        if (pGoodSumw2 && pBadSumw2)
+            std::swap( pGoodSumw2[bin], pBadSumw2[bin] );
+
+        if (pGoodProfile)  // handle TProfile fields
+        {
+            Double_t binEntries = pGoodProfile->GetBinEntries(bin);
+            pBadProfile->SetBinEntries( bin, binEntries );          // sets both fBinEntries and fBinSumw2, fbinSumw2 is thus incorrect
+
+            if (pGoodBinSumw2 && pBadBinSumw2)
+                std::swap( pGoodBinSumw2[bin], pBadBinSumw2[bin] ); // set the actual value for fBinSumw2
+
+            pGoodProfile->SetBinEntries( bin, 0 );                  // sets both fBinEntries and fBinSumw2 to zero
+        }
+
+        LogMsgInfo( "Good: %g (±%g)  Bad: %g (±%g) - after",
+            FMT_F(pGood->GetBinContent(bin)), FMT_F(pGood->GetBinError(bin)),
+            FMT_F(pBad ->GetBinContent(bin)), FMT_F(pBad ->GetBinError(bin)) );
+        */
+    }
+
+    pGood->ResetStats();
+    pBad ->ResetStats();
+
+    LogMsgInfo( "HistSplitGoodBadBins: %hs using %hs -> %u bins: %u good, %u bad, %u empty",
+                FMT_HS(pSource->GetName()), FMT_HS(pCompare->GetName()),
+                FMT_I(nSize), FMT_U(nGood), FMT_U(nBad), FMT_U(nEmpty) );
+
+    return { TH1DUniquePtr(pGood), TH1DUniquePtr(pBad) };
+}
+
+////////////////////////////////////////////////////////////////////////////////
+std::list<GoodBadHists> HistSplitGoodBadBins( const ConstTH1DVector & hists )
+{
+    std::list<GoodBadHists> result;
+
+    for (const TH1D * pOrigHist : hists)
+    {
+        GoodBadHists goodBad = HistSplitGoodBadBins( pOrigHist );
+        result.push_back( std::move(goodBad) );
+    }
+
+    return result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+Double_t KolmogorovTest_NonEmptyBins( const TH1D & h1, const TH1D & h2 )
+{
+    TH1DUniquePtr p1( (TH1D *)h1.Clone() );
+    TH1DUniquePtr p2( (TH1D *)h2.Clone() );
+
+    ZeroHistEmptyBins( *p1, *p2 );  // zero bins if either are zero
+
+  //Double_t oldTest = h1.KolmogorovTest( &h2 );
+    Double_t newTest = p1->KolmogorovTest( p2.get() );
+
+  //LogMsgInfo( "KolmogorovTest: old=%g new=%g", oldTest, newTest );
+
+    return newTest;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 void WriteCompareFigure( const char * name, const char * title, const ConstTH1DVector & data, const ConstTH1DVector & compare, const ColorVector & dataColors )
@@ -109,7 +376,29 @@ void WriteCompareFigure( const char * name, const char * title, const ConstTH1DV
 
         canvas.cd(1);
 
-        TH1DVector drawHists = DrawMultipleHist( title, data, dataColors );
+        // draw the histograms
+        TH1DVector drawHists = DrawMultipleHist( title, data, dataColors );  // drawHists are owned by the current pad
+
+        // determine good/bad histograms
+        std::list<GoodBadHists> goodBadData = HistSplitGoodBadBins( ToConstTH1DVector(drawHists) );
+
+        // draw bad hists
+        for (const auto & gb : goodBadData)
+        {
+            gb.bad->SetMarkerStyle( kOpenCircle );
+
+            if (gb.bad->GetEffectiveEntries() != 0)
+                gb.bad->DrawCopy( "SAME" );     // draw copy so object persists after goodBadData goes out of scope
+        }
+
+        /*
+        // reduce good bins using data[0]
+        for (auto & gb : goodBadData)
+        {
+            GoodBadHists gbNew = HistSplitGoodBadBins( gb.good.get(), data[0] );
+            gb.good = std::move(gbNew.good);
+        }
+        */
 
         // add a customized legend, different than TPad::BuildLegend
         {
@@ -117,10 +406,15 @@ void WriteCompareFigure( const char * name, const char * title, const ConstTH1DV
 
             pLegend->SetMargin( 0.1 );  // reduce width for entry symbol from 25% to 10%
 
+            const TH1D * pDataBase = data[0];
+            const TH1D * pGoodBase = goodBadData.cbegin()->good.get();
+
+            auto gbitr = goodBadData.cbegin();
             for (size_t i = 0; i < drawHists.size(); ++i)
             {
                 const TH1D * pDrawHist = drawHists[i];
                 const TH1D * pDataHist = data[i];
+                const TH1D * pGoodHist = (gbitr++)->good.get();
 
                 pLegend->AddEntry( pDrawHist, pDrawHist->GetTitle() );
 
@@ -128,10 +422,12 @@ void WriteCompareFigure( const char * name, const char * title, const ConstTH1DV
                 {
                     // add Kolmogorov probability
                     {
-                        Double_t prob = data[0]->KolmogorovTest( pDataHist );
+                        Double_t probAll  = KolmogorovTest_NonEmptyBins( *pDataBase, *pDataHist );
+                        Double_t probGood = KolmogorovTest_NonEmptyBins( *pGoodBase, *pGoodHist );
 
                         char label[100];
-                        sprintf( label, "Kolmogorov = %0.4f", FMT_F(prob) );
+                        sprintf( label, "Kolmogorov = all:%0.4f good:%0.4f", FMT_F(probAll), FMT_F(probGood) );
+                      //sprintf( label, "Kolmogorov = %0.4f", FMT_F(probAll) );
                         LogMsgInfo( label );
 
                         pLegend->AddEntry( (TObject *)nullptr, label, "" );
@@ -139,17 +435,50 @@ void WriteCompareFigure( const char * name, const char * title, const ConstTH1DV
 
                     // add Chi2Test probability
                     {
-                        Double_t chi2     = 0;
-                        Int_t    ndf      = 0;
-                        Int_t    igood    = 0;
-                        Double_t prob     = data[0]->Chi2TestX( pDataHist, chi2, ndf, igood, "WW" );
-                        Double_t chi2_ndf = (ndf > 0 ? chi2 / ndf : 0.0);
+                        struct Chi2Result
+                        {
+                            Double_t chi2     = 0;
+                            Int_t    ndf      = 0;
+                            Int_t    igood    = 0;
+                            Double_t prob     = 0;
+                            Double_t chi2_ndf = 0;
 
-                        char label[200];
-                        sprintf( label, "#chi^{2}/ndf = %.4g/%i = %.3f   p-value = %0.4f", FMT_F(chi2), FMT_I(ndf), FMT_F(chi2_ndf), FMT_F(prob) );
-                        LogMsgInfo( label );
+                            void Chi2Test( const TH1D & h1, const TH1D & h2 )
+                            {
+                                TH1DUniquePtr p1( (TH1D *)h1.Clone() );
+                                TH1DUniquePtr p2( (TH1D *)h2.Clone() );
 
-                        pLegend->AddEntry( (TObject *)nullptr, label, "" );
+                                ZeroHistEmptyBins( *p1, *p2 );  // zero bins if either are zero
+
+                                LogMsgInfo( "Chi2Test(%hs,%hs): (%u,%u) -> %u bins", FMT_HS(h1.GetName()), FMT_HS(h2.GetName()),
+                                            FMT_U(HistNonEmptyBinCount(h1)), FMT_U(HistNonEmptyBinCount(h2)),
+                                            FMT_U(HistNonEmptyBinCount(*p1,*p2,true)) );
+
+                                prob     = p1->Chi2TestX( p2.get(), chi2, ndf, igood, "WW" );
+                                chi2_ndf = (ndf > 0 ? chi2 / ndf : 0.0);
+                            }
+
+                            std::string Label()
+                            {
+                                char label[200];
+                                sprintf( label, "#chi^{2}/ndf = %.4g/%i = %.3f   p-value = %0.4f", FMT_F(chi2), FMT_I(ndf), FMT_F(chi2_ndf), FMT_F(prob) );
+                                return label;
+                            }
+                        };
+
+                        Chi2Result chi2All;
+                        chi2All.Chi2Test( *pDataBase, *pDataHist );
+
+                        std::string labelAll = std::string("all:  ") + chi2All .Label();
+                        LogMsgInfo( labelAll );
+                        pLegend->AddEntry( (TObject *)nullptr, labelAll .c_str(), "" );
+
+                        Chi2Result chi2Good;
+                        chi2Good.Chi2Test( *pGoodBase, *pGoodHist );
+
+                        std::string labelGood = std::string("good: ") + chi2Good.Label();
+                        LogMsgInfo( labelGood );
+                        pLegend->AddEntry( (TObject *)nullptr, labelGood.c_str(), "" );
                     }
                 }
             }
@@ -167,6 +496,30 @@ void WriteCompareFigure( const char * name, const char * title, const ConstTH1DV
 
         // draw the histograms
         TH1DVector drawHists = DrawMultipleHist( "", compare );
+
+        // determine good/bad histograms
+        std::list<GoodBadHists> goodBadCompare;
+        {
+            size_t i = 1;
+            for (const TH1D * pHist : drawHists)
+            {
+                GoodBadHists goodBad1 = HistSplitGoodBadBins( pHist,               data[0]   );
+                GoodBadHists goodBad2 = HistSplitGoodBadBins( goodBad1.good.get(), data[i++] );
+
+                goodBad2.bad->Add( goodBad1.bad.get() );  // add the two bad hists together
+
+                goodBadCompare.push_back( std::move(goodBad2) );
+            }
+        }
+
+        // draw bad hists
+        for (const auto & gb : goodBadCompare)
+        {
+            gb.bad->SetMarkerStyle( kOpenCircle );
+
+            if (gb.bad->GetEffectiveEntries() != 0)
+                gb.bad->DrawCopy( "SAME" );     // draw copy so object persists after goodBadData goes out of scope
+        }
 
         // add ticks to top and right
         canvas.GetPad(2)->SetTickx();
