@@ -185,6 +185,49 @@ std::list<GoodBadHists> HistSplitGoodBadBins( const ConstTH1DVector & hists )
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+std::string GetLabel_FitToHorzLineAtOne( const TH1D & hist )
+{
+    TF1 horz1( "horz1", "1.0" );
+
+    Chi2Result res;
+    res.chi2     = hist.Chisquare( &horz1 );
+    res.ndf      = (Int_t)HistNonEmptyBinCount(hist);
+    res.prob     = (res.ndf > 0 ? TMath::Prob( res.chi2, res.ndf ) : 0.0);
+    res.chi2_ndf = (res.ndf > 0 ? res.chi2 / res.ndf : 0.0);
+
+    std::string label = "Fit to 1: " + res.Label();
+    return label;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+std::string GetLabel_FitToHorzLineAtConstant( const TH1D & hist )
+{
+    TF1 horz( "horz", "pol0" );
+    horz.SetParameter( 0, 1.0 );
+
+    TH1DUniquePtr pFitHist{ (TH1D *)hist.Clone() };     // clone hist as Fit is not const
+
+    int fitStatus = pFitHist->Fit( &horz, "NQM" );
+    if ((int)fitStatus < 0)
+        return "";
+
+    Chi2Result res;
+    res.chi2     = horz.GetChisquare();
+    res.ndf      = horz.GetNDF();
+    res.prob     = horz.GetProb();
+    res.chi2_ndf = (res.ndf > 0 ? res.chi2 / res.ndf : 0.0);
+
+    Double_t p0_val = horz.GetParameter(0);
+    Double_t p0_err = horz.GetParError(0);
+
+    char prefix[50];
+    sprintf( prefix, "Fit to c = %.2f#pm%.2g: ", FMT_F(p0_val), FMT_F(p0_err) );
+
+    std::string label = prefix + res.Label();
+    return label;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 void WriteCompareFigure( const char * name, const char * title, const ConstTH1DVector & data, const ConstTH1DVector & compare, const ColorVector & dataColors )
 {
     TCanvas canvas( name, title );
@@ -214,28 +257,30 @@ void WriteCompareFigure( const char * name, const char * title, const ConstTH1DV
 
         // add a customized legend, different than TPad::BuildLegend
         {
-            TLegend * pLegend = new TLegend( 0.5, 0.67, 0.88, 0.88 );  // using default parameters to TPad::BuildLegend
+            TLegend * pLegend = new TLegend( 0.4, 0.53, 0.88, 0.88 );  // using default parameters to TPad::BuildLegend
 
             pLegend->SetMargin( 0.1 );  // reduce width for entry symbol from 25% to 10%
 
-            const TH1D * pDataBase = data[0];
-            const TH1D * pGoodBase = goodBadData.cbegin()->good.get();
-
             auto gbitr = goodBadData.cbegin();
-            for (size_t i = 0; i < drawHists.size(); ++i)
+
+            const TH1D * pBaseAll  = drawHists[0];
+            const TH1D * pBaseGood = gbitr->good.get();
+
+            for (size_t i = 0; i < drawHists.size(); ++i, ++gbitr)
             {
                 const TH1D * pDrawHist = drawHists[i];
-                const TH1D * pDataHist = data[i];
-                const TH1D * pGoodHist = (gbitr++)->good.get();
 
                 pLegend->AddEntry( pDrawHist, pDrawHist->GetTitle() );
 
                 if (i != 0)
                 {
+                    const TH1D * pCompAll  = pDrawHist;
+                    const TH1D * pCompGood = gbitr->good.get();
+
                     // add Kolmogorov probability
                     {
-                        Double_t probAll  = KolmogorovTest_NonEmptyBins( *pDataBase, *pDataHist );
-                        Double_t probGood = KolmogorovTest_NonEmptyBins( *pGoodBase, *pGoodHist );
+                        Double_t probAll  = KolmogorovTest_NonEmptyBins( *pBaseAll,  *pCompAll  );
+                        Double_t probGood = KolmogorovTest_NonEmptyBins( *pBaseGood, *pCompGood );
 
                         char label[100];
                         sprintf( label, "Kolmogorov = all:%0.4f good:%0.4f", FMT_F(probAll), FMT_F(probGood) );
@@ -247,16 +292,16 @@ void WriteCompareFigure( const char * name, const char * title, const ConstTH1DV
                     // add Chi2Test probability
                     {
                         Chi2Result chi2All;
-                        chi2All.Chi2Test( *pDataBase, *pDataHist );
+                        chi2All.Chi2Test( *pBaseAll, *pCompAll );
 
-                        std::string labelAll = std::string("all:  ") + chi2All .Label();
+                        std::string labelAll = std::string("All ") + chi2All.Label();
                         LogMsgInfo( labelAll );
-                        pLegend->AddEntry( (TObject *)nullptr, labelAll .c_str(), "" );
+                        pLegend->AddEntry( (TObject *)nullptr, labelAll.c_str(), "" );
 
                         Chi2Result chi2Good;
-                        chi2Good.Chi2Test( *pGoodBase, *pGoodHist );
+                        chi2Good.Chi2Test( *pBaseGood, *pCompGood );
 
-                        std::string labelGood = std::string("good: ") + chi2Good.Label();
+                        std::string labelGood = std::string("Good ") + chi2Good.Label();
                         LogMsgInfo( labelGood );
                         pLegend->AddEntry( (TObject *)nullptr, labelGood.c_str(), "" );
                     }
@@ -319,63 +364,43 @@ void WriteCompareFigure( const char * name, const char * title, const ConstTH1DV
 
         // add a customized legend, different than TPad::BuildLegend
         {
-            TLegend * pLegend = new TLegend( 0.12, 0.67, 0.6, 0.88 );  // .1 wider than default and aligned to left
+            TLegend * pLegend = new TLegend( 0.12, 0.53, 0.7, 0.88 );  // .1 wider than default and aligned to left
 
             pLegend->SetMargin( 0.1 );  // reduce width for entry symbol from 25% to 10%
 
-            for (size_t i = 0; i < compare.size(); ++i)
+            std::string label;
+
+            auto gbitr = goodBadCompare.cbegin();
+
+            for (size_t i = 0; i < compare.size(); ++i, ++gbitr)
             {
                 const TH1D * pDrawHist = drawHists[i];
-                const TH1D * pCompHist = compare[i];
 
                 pLegend->AddEntry( pDrawHist, pDrawHist->GetTitle() );
 
-                size_t nNonEmptyBins = HistNonEmptyBinCount( *pCompHist );
-                LogMsgInfo( "%hs: %u non-empty bins", FMT_HS(pCompHist->GetName()), FMT_U(nNonEmptyBins) );
+                const TH1D * pCompAll  = pDrawHist;
+                const TH1D * pCompGood = gbitr->good.get();
 
                 // add a fit to a horizontal line at y=1.0
                 {
-                    TF1 horz1( "horz1", "1.0" );
-
-                    Double_t chi2     = pCompHist->Chisquare( &horz1 );
-                    Int_t    ndf      = (Int_t)nNonEmptyBins;
-                    Double_t prob     = (ndf > 0 ? TMath::Prob( chi2, ndf ) : 0.0);
-                    Double_t chi2_ndf = (ndf > 0 ? chi2 / ndf : 0.0);
-
-                    char label[200];
-                    sprintf( label, "Fit to 1: #chi^{2}/ndf = %.4g/%i = %.3f   p-value = %0.4f", FMT_F(chi2), FMT_I(ndf), FMT_F(chi2_ndf), FMT_F(prob) );
+                    label = "All " + GetLabel_FitToHorzLineAtOne( *pCompAll );
                     LogMsgInfo( label );
+                    pLegend->AddEntry( (TObject *)nullptr, label.c_str(), "" );
 
-                    pLegend->AddEntry( (TObject *)nullptr, label, "" );
+                    label = "Good " + GetLabel_FitToHorzLineAtOne( *pCompGood );
+                    LogMsgInfo( label );
+                    pLegend->AddEntry( (TObject *)nullptr, label.c_str(), "" );
                 }
 
                 // add a fit to a horizontal line at a y=c
                 {
-                    TF1 horz( "horz", "pol0" );
+                    label = "All " + GetLabel_FitToHorzLineAtConstant( *pCompAll );
+                    LogMsgInfo( label );
+                    pLegend->AddEntry( (TObject *)nullptr, label.c_str(), "" );
 
-                    horz.SetParameter( 0, 1.0 );
-
-                    TH1DUniquePtr pFitHist{ (TH1D *)pCompHist->Clone() };   // clone hist as Fit is not const
-                    pFitHist->SetDirectory( nullptr );                      // ensure not owned by any directory
-
-                    int fitStatus = pFitHist->Fit( &horz, "NQM" );
-                    if ((int)fitStatus >= 0)
-                    {
-                        Double_t chi2     = horz.GetChisquare();
-                        Int_t    ndf      = horz.GetNDF();
-                        Double_t prob     = horz.GetProb();
-                        Double_t chi2_ndf = (ndf > 0 ? chi2 / ndf : 0.0);
-
-                        Double_t p0_val = horz.GetParameter(0);
-                        Double_t p0_err = horz.GetParError(0);
-
-                        char label[200];
-                        sprintf( label, "Fit to c = %.2f#pm%.2g: #chi^{2}/ndf = %.4g/%i = %.3f   p-value = %0.4f",
-                                 FMT_F(p0_val), FMT_F(p0_err), FMT_F(chi2), FMT_I(ndf), FMT_F(chi2_ndf), FMT_F(prob) );
-                        LogMsgInfo( label );
-
-                        pLegend->AddEntry( (TObject *)nullptr, label, "" );
-                    }
+                    label = "Good " + GetLabel_FitToHorzLineAtConstant( *pCompGood );
+                    LogMsgInfo( label );
+                    pLegend->AddEntry( (TObject *)nullptr, label.c_str(), "" );
                 }
             }
 
