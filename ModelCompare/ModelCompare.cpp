@@ -95,6 +95,13 @@ const ColorVector FigureSetup::DefaultColors =
 };
 
 ////////////////////////////////////////////////////////////////////////////////
+void ScaleHistToLuminosity( double luminosity, const TH1DVector & hists, const ModelFile & eventFile, bool bApplyCrossSectionError /*= false*/ )
+{
+    RootUtil::ScaleHistToLuminosity( luminosity, hists, eventFile.crossSectionEvents, eventFile.crossSection,
+                                     eventFile.crossSectionError, bApplyCrossSectionError );
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 struct GoodBadHists
 {

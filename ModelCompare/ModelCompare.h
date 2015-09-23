@@ -138,6 +138,8 @@ typedef std::vector<FigureSetup> FigureSetupVector;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+void ScaleHistToLuminosity( double luminosity, const RootUtil::TH1DVector & hists, const ModelFile & eventFile, bool bApplyCrossSectionError = false );
+
 void WriteCompareFigure( const char * name, const char * title,
                          const RootUtil::ConstTH1DVector & data, const RootUtil::ConstTH1DVector & compare,
                          const RootUtil::ColorVector & dataColors );
