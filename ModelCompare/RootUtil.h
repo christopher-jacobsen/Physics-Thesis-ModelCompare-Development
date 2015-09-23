@@ -92,7 +92,15 @@ TH1D * ConvertTProfileToTH1D( const TH1D * pProfile, bool bDeleteProfile );
 void SetupHist( TH1D & hist, const char * xAxisTitle = nullptr, const char * yAxisTitle = nullptr,
                 Color_t lineColor = -1, Color_t markerColor = -1, Color_t fillColor = -1 );
 
+void ScaleHistToLuminosity( double luminosity, const TH1D & hist, size_t nEvents, double crossSection,
+                            double crossSectionError, bool bApplyCrossSectionError = false );
+
+void ScaleHistToLuminosity( double luminosity, const TH1DVector & hist, size_t nEvents, double crossSection,
+                            double crossSectionError, bool bApplyCrossSectionError = false );
+
 void WriteHists( TFile * pFile, const TH1DVector & hists );
+
+////////////////////////////////////////////////////////////////////////////////
 
 void GetHistDrawMinMax( const TH1D & hist,             Double_t & ymin, Double_t & ymax );
 void GetHistDrawMinMax( const ConstTH1DVector & hists, Double_t & ymin, Double_t & ymax );

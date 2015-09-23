@@ -260,7 +260,9 @@ TH1D * ConvertTProfileToTH1D( const TH1D * pProfile, bool bDeleteProfile )
 void SetupHist( TH1D & hist, const char * xAxisTitle, const char * yAxisTitle,
                 Color_t lineColor /*= -1*/, Color_t markerColor /*= -1*/, Color_t fillColor /*= -1*/ )
 {
-    hist.Sumw2();
+    if (hist.GetSumw2N() == 0)
+        hist.Sumw2();
+
     hist.SetStats( kFALSE );
 
     if (xAxisTitle)
@@ -274,6 +276,46 @@ void SetupHist( TH1D & hist, const char * xAxisTitle, const char * yAxisTitle,
         hist.SetMarkerColor( markerColor );
     if (fillColor >= 0)
         hist.SetFillColor( fillColor );
+}
+
+////////////////////////////////////////////////////////////////////////////////
+void ScaleHistToLuminosity( double luminosity, TH1D & hist, size_t nEvents, double crossSection,
+                            double crossSectionError, bool bApplyCrossSectionError /*= false*/ )
+{
+    double scale = luminosity * crossSection * 1000 / nEvents;
+
+    LogMsgInfo( "Scaling %hs with %g", FMT_HS(hist.GetName()), FMT_F(scale) );
+
+    hist.Scale( scale );
+
+    if (bApplyCrossSectionError)
+    {
+        double relError = crossSectionError / crossSection;
+
+        for (Int_t bin = 0; bin <= hist.GetNbinsX() + 1; ++bin)
+        {
+            Double_t binContent = hist.GetBinContent(bin);
+            Double_t addError   = binContent * relError;
+
+            Double_t binError   = hist.GetBinError(bin);
+            Double_t newError   = std::sqrt( binError * binError + addError * addError );
+
+            hist.SetBinError( bin, newError );
+        }
+
+        hist.ResetStats();  // force recalculation of sumw2
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+void ScaleHistToLuminosity( double luminosity, const TH1DVector & hists, size_t nEvents, double crossSection,
+                            double crossSectionError, bool bApplyCrossSectionError /*= false*/ )
+{
+    for (TH1D * pHist : hists)
+    {
+        if (pHist)
+            ScaleHistToLuminosity( luminosity, *pHist, nEvents, crossSection, crossSectionError, bApplyCrossSectionError );
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
