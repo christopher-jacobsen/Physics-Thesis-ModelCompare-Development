@@ -227,6 +227,71 @@ void LogMsgHistStats( const TH1D & hist )
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+void LogMsgHistEffectiveEntries( const TH1D & hist )
+{
+    LogMsgInfo( "%hs: entries = %g, eff. entries = %g, sum bins = %g",
+        FMT_HS(hist.GetName()),
+        FMT_F(hist.GetEntries()), FMT_F(hist.GetEffectiveEntries()),
+        FMT_F(hist.GetSumOfWeights()) );
+}
+
+////////////////////////////////////////////////////////////////////////////////
+void LogMsgHistEffectiveEntries( const ConstTH1DVector & hists )
+{
+    for (const TH1D * pHist : hists)
+    {
+        if (pHist)
+            LogMsgHistEffectiveEntries( *pHist );
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+void LogMsgHistDump( const TH1D & hist )
+{
+    // gain access to TProfile protected members
+    class MyProfile : public TProfile
+    {
+        friend void RootUtil::LogMsgHistDump( const TH1D & );
+    };
+
+    const MyProfile * pProf = hist.InheritsFrom(TProfile::Class()) ? static_cast<const MyProfile *>(&hist) : nullptr;
+
+    const Double_t * pSumw        = hist.GetArray();
+    const Double_t * pSumw2       = hist.GetSumw2()->GetArray(); // can be null
+    const Double_t * pBinEntries  = pProf ? pProf->fBinEntries.GetArray()    : nullptr;
+    const Double_t * pBinSumw2    = pProf ? pProf->GetBinSumw2()->GetArray() : nullptr;
+
+    const Int_t nSize = hist.GetSize();
+    for (Int_t bin = 0; bin < nSize; ++bin)
+    {
+        Double_t sumw  = pSumw[bin];
+        Double_t sumw2 = pSumw2 ? pSumw2[bin] : sumw;
+
+        if (!pProf)
+        {
+            Double_t error = hist.GetBinError(bin);
+            Double_t nEff  = (sumw2 != 0 ? sumw * sumw / sumw2 : 0);
+
+            LogMsgInfo( "%i: sumw=%.13E  sumw2=%.13E  error=%.13E  nEff=%.13E",
+                        FMT_I(bin), FMT_F(sumw), FMT_F(sumw2), FMT_F(error), FMT_F(nEff) );
+        }
+        else
+        {
+            Double_t binEntries = pBinEntries[bin];
+            Double_t binSumw2   = pBinSumw2 ? pBinSumw2[bin] : binEntries;
+
+            Double_t content = pProf->GetBinContent(bin);
+            Double_t error   = pProf->GetBinError(bin);
+            Double_t nEff    = pProf->GetBinEffectiveEntries(bin);
+
+            LogMsgInfo( "%i: sumw=%.13E  sumw2=%.13E  bEnt=%.13E  bSw2=%.13E  cnt=%.13E  err=%.13E  nEff=%.13E",
+                        FMT_I(bin), FMT_F(sumw), FMT_F(sumw2), FMT_F(binEntries), FMT_F(binSumw2),
+                        FMT_F(content), FMT_F(error), FMT_F(nEff) );
+        }
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TH1D * ConvertTProfileToTH1D( const TH1D * pProfile, bool bDeleteProfile )
 {
     TH1D * pHist = nullptr;
@@ -257,10 +322,19 @@ TH1D * ConvertTProfileToTH1D( const TH1D * pProfile, bool bDeleteProfile )
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+bool IsHistSumw2Enabled( const TH1D & hist )
+{
+    if (hist.InheritsFrom(TProfile::Class()))
+        return static_cast<const TProfile *>(&hist)->GetBinSumw2()->fN != 0;
+
+    return hist.GetSumw2()->fN != 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 void SetupHist( TH1D & hist, const char * xAxisTitle, const char * yAxisTitle,
                 Color_t lineColor /*= -1*/, Color_t markerColor /*= -1*/, Color_t fillColor /*= -1*/ )
 {
-    if (hist.GetSumw2N() == 0)
+    if (!IsHistSumw2Enabled(hist))
         hist.Sumw2();
 
     hist.SetStats( kFALSE );
@@ -596,7 +670,7 @@ void Chi2Result::Chi2Test( const TH1D & h1, const TH1D & h2 )
 std::string Chi2Result::Label()
 {
     char label[200];
-    sprintf( label, "#chi^{2}/ndf = %.4g/%i = %.3f   p-value = %0.4f", FMT_F(chi2), FMT_I(ndf), FMT_F(chi2_ndf), FMT_F(prob) );
+    sprintf( label, "#chi^{2}/ndf = %.4g/%i = %.4g  p-value = %.4g", FMT_F(chi2), FMT_I(ndf), FMT_F(chi2_ndf), FMT_F(prob) );
     return label;
 }
 

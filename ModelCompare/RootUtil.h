@@ -85,9 +85,16 @@ void LogMsgHistUnderOverflow( const ConstTH1DVector & hists );
 
 void LogMsgHistStats( const TH1D & hist );
 
+void LogMsgHistEffectiveEntries( const TH1D & hist );
+void LogMsgHistEffectiveEntries( const ConstTH1DVector & hists );
+
+void LogMsgHistDump( const TH1D & hist );
+
 ////////////////////////////////////////////////////////////////////////////////
 
 TH1D * ConvertTProfileToTH1D( const TH1D * pProfile, bool bDeleteProfile );
+
+bool IsHistSumw2Enabled( const TH1D & hist );
 
 void SetupHist( TH1D & hist, const char * xAxisTitle = nullptr, const char * yAxisTitle = nullptr,
                 Color_t lineColor = -1, Color_t markerColor = -1, Color_t fillColor = -1 );
