@@ -178,13 +178,16 @@ GoodBadHists HistSplitGoodBadBins( const TH1D * pSource, const TH1D * pCompare =
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-std::list<GoodBadHists> HistSplitGoodBadBins( const ConstTH1DVector & hists )
+std::list<GoodBadHists> HistSplitGoodBadBins( const ConstTH1DVector & hists, const ConstTH1DVector & compare  )
 {
     std::list<GoodBadHists> result;
 
-    for (const TH1D * pOrigHist : hists)
+    auto compItr = compare.cbegin();
+    for (const TH1D * pSource : hists)
     {
-        GoodBadHists goodBad = HistSplitGoodBadBins( pOrigHist );
+        const TH1D * pComp = (compItr != compare.end()) ? *compItr++ : nullptr;
+
+        GoodBadHists goodBad = HistSplitGoodBadBins( pSource, pComp );
         result.push_back( std::move(goodBad) );
     }
 
@@ -215,7 +218,7 @@ std::string GetLabel_FitToHorzLineAtConstant( const TH1D & hist )
     TH1DUniquePtr pFitHist{ (TH1D *)hist.Clone() };     // clone hist as Fit is not const
 
     int fitStatus = pFitHist->Fit( &horz, "NQM" );
-    if ((int)fitStatus < 0)
+    if ((fitStatus < 0) || (fitStatus % 1000 != 0))  // ignore improve (M) errors
         return "";
 
     Chi2Result res;
@@ -235,7 +238,8 @@ std::string GetLabel_FitToHorzLineAtConstant( const TH1D & hist )
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void WriteCompareFigure( const char * name, const char * title, const ConstTH1DVector & data, const ConstTH1DVector & compare, const ColorVector & dataColors )
+void WriteCompareFigure( const char * name, const char * title, const ConstTH1DVector & data, const ConstTH1DVector & compare, const ColorVector & dataColors,
+                         const ConstTH1DVector & rawData )
 {
     TCanvas canvas( name, title );
 
@@ -251,7 +255,7 @@ void WriteCompareFigure( const char * name, const char * title, const ConstTH1DV
         TH1DVector drawHists = DrawMultipleHist( title, data, dataColors );  // drawHists are owned by the current pad
 
         // determine good/bad histograms
-        std::list<GoodBadHists> goodBadData = HistSplitGoodBadBins( ToConstTH1DVector(drawHists) );
+        std::list<GoodBadHists> goodBadData = HistSplitGoodBadBins( ToConstTH1DVector(drawHists), rawData );
 
         // draw bad hists
         for (const auto & gb : goodBadData)
@@ -335,8 +339,8 @@ void WriteCompareFigure( const char * name, const char * title, const ConstTH1DV
             size_t i = 1;
             for (const TH1D * pHist : drawHists)
             {
-                GoodBadHists goodBad1 = HistSplitGoodBadBins( pHist,               data[0]   );
-                GoodBadHists goodBad2 = HistSplitGoodBadBins( goodBad1.good.get(), data[i++] );
+                GoodBadHists goodBad1 = HistSplitGoodBadBins( pHist,               rawData[0]   );
+                GoodBadHists goodBad2 = HistSplitGoodBadBins( goodBad1.good.get(), rawData[i++] );
 
                 goodBad2.bad->Add( goodBad1.bad.get() );  // add the two bad hists together
 
@@ -626,7 +630,7 @@ void ModelCompare( const char * outputFileName, const ModelFileVector & models, 
                 std::string figName  = "fig_" + std::string(obsComp[0]->GetName());
                 std::string figTitle = obsComp[0]->GetTitle();
 
-                WriteCompareFigure( figName.c_str(), figTitle.c_str(), obsData, ToConstTH1DVector(obsComp), figSetup.colors );
+                WriteCompareFigure( figName.c_str(), figTitle.c_str(), obsData, ToConstTH1DVector(obsComp), figSetup.colors, obsData );
             }
         }
     }

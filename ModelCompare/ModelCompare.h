@@ -142,7 +142,8 @@ void ScaleHistToLuminosity( double luminosity, const RootUtil::TH1DVector & hist
 
 void WriteCompareFigure( const char * name, const char * title,
                          const RootUtil::ConstTH1DVector & data, const RootUtil::ConstTH1DVector & compare,
-                         const RootUtil::ColorVector & dataColors );
+                         const RootUtil::ColorVector & dataColors,
+                         const RootUtil::ConstTH1DVector & rawData );
 
 void LoadHistData( const ModelFileVector & models, const ObservableVector & observables, std::vector<RootUtil::TH1DVector> & hists );
 

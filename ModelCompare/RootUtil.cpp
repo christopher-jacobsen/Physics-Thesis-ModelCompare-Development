@@ -282,11 +282,66 @@ void SetupHist( TH1D & hist, const char * xAxisTitle, const char * yAxisTitle,
 void ScaleHistToLuminosity( double luminosity, TH1D & hist, size_t nEvents, double crossSection,
                             double crossSectionError, bool bApplyCrossSectionError /*= false*/ )
 {
+    // Luminosity scaling is not the same as scaling by a constant.
+    // Instead we want to change the number of effective entries:
+    // All internal sums must be scaled in like fashion, as if the number
+    // of entries in each sum was scaled.
+
+    // --- TH1D ----
+    // internal sums:       sumw, sumw2
+    // effective entries:   sumw^2 / sumw2
+    // scaling by s:        binContent *= s, binError *= sqrt(s)
+
+    // --- TProfile ----
+    // internal sums:       sumw, sumw2, binEntries, binSumw2
+    // effective entries:   binEntries^2 / binSumw2
+    // scaling by s:        binError *= 1/sqrt(s)
+
+    // Unfortunately for TProfile, the binEntries field is not publicly accessible
+    // get access to protected members:
+    class MyProfile : public TProfile
+    {
+        friend void RootUtil::ScaleHistToLuminosity( double, TH1D &, size_t, double, double, bool );
+    };
+
+
     double scale = luminosity * crossSection * 1000 / nEvents;
 
     LogMsgInfo( "Scaling %hs with %g", FMT_HS(hist.GetName()), FMT_F(scale) );
 
-    hist.Scale( scale );
+    //LogMsgInfo( "------ before luminosity scale ------" );
+    //hist.Print("all");
+    //LogMsgHistStats(hist);
+    //LogMsgHistEffectiveEntries(hist);
+
+    MyProfile * pProf = hist.InheritsFrom(TProfile::Class()) ? static_cast<MyProfile *>(&hist) : nullptr;
+
+    Double_t * pSumw        = hist.GetArray();
+    Double_t * pSumw2       = hist.GetSumw2()->GetArray(); // can be null
+    Double_t * pBinEntries  = pProf ? pProf->fBinEntries.GetArray()    : nullptr;
+    Double_t * pBinSumw2    = pProf ? pProf->GetBinSumw2()->GetArray() : nullptr;
+
+    const Int_t nSize = hist.GetSize();
+    for (Int_t bin = 0; bin < nSize; ++bin)
+    {
+        pSumw[bin] *= scale;
+
+        if (pSumw2)
+            pSumw2[bin] *= scale;
+
+        if (pBinEntries)
+            pBinEntries[bin] *= scale;
+
+        if (pBinSumw2)
+            pBinSumw2[bin] *= scale;
+    }
+
+    hist.ResetStats();
+
+    //LogMsgInfo( "------ after luminosity scale ------" );
+    //LogMsgHistStats(hist);
+    //LogMsgHistEffectiveEntries(hist);
+    //hist.Print("all");
 
     if (bApplyCrossSectionError)
     {
