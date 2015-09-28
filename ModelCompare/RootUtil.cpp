@@ -29,6 +29,14 @@ namespace RootUtil
 {
 
 ////////////////////////////////////////////////////////////////////////////////
+
+// gain access to TProfile fBinEntries
+struct MyProfile : public TProfile
+{
+    using TProfile::fBinEntries;
+};
+
+////////////////////////////////////////////////////////////////////////////////
 void LoadEvents( const char * eventFileName, std::function<void(const HepMC::GenVertex & signal)> EventFunc )
 {
     std::unique_ptr<ATOOLS::igzstream>  upStream;
@@ -218,7 +226,7 @@ void LogMsgHistStats( const TH1D & hist )
    // s[7]  = sumwz      s[8]  = sumwz2   s[9]  = sumwxz   s[10]  = sumwyz  
    // s[11] = sumwt      s[12] = sumwt2  (11 and 12 used only by TProfile3D)
 
-    Double_t stats[TH1::kNstat];
+    Double_t stats[TH1::kNstat] = { };
     hist.GetStats( stats );
 
     LogMsgInfo( "%hs: sumw=%g sumw2=%g sumwx=%g sumwx2=%g sumwy=%g sumwy2=%g", FMT_HS(hist.GetName()),
@@ -248,12 +256,6 @@ void LogMsgHistEffectiveEntries( const ConstTH1DVector & hists )
 ////////////////////////////////////////////////////////////////////////////////
 void LogMsgHistDump( const TH1D & hist )
 {
-    // gain access to TProfile protected members
-    class MyProfile : public TProfile
-    {
-        friend void RootUtil::LogMsgHistDump( const TH1D & );
-    };
-
     const MyProfile * pProf = hist.InheritsFrom(TProfile::Class()) ? static_cast<const MyProfile *>(&hist) : nullptr;
 
     const Double_t * pSumw        = hist.GetArray();
@@ -370,14 +372,6 @@ void ScaleHistToLuminosity( double luminosity, TH1D & hist, size_t nEvents, doub
     // internal sums:       sumw, sumw2, binEntries, binSumw2
     // effective entries:   binEntries^2 / binSumw2
     // scaling by s:        binError *= 1/sqrt(s)
-
-    // Unfortunately for TProfile, the binEntries field is not publicly accessible
-    // get access to protected members:
-    class MyProfile : public TProfile
-    {
-        friend void RootUtil::ScaleHistToLuminosity( double, TH1D &, size_t, double, double, bool );
-    };
-
 
     double scale = luminosity * crossSection * 1000 / nEvents;
 
