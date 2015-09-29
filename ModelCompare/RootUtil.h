@@ -88,6 +88,11 @@ void LogMsgHistStats( const TH1D & hist );
 void LogMsgHistEffectiveEntries( const TH1D & hist );
 void LogMsgHistEffectiveEntries( const ConstTH1DVector & hists );
 
+void LogMsgHistBinCounts( const TH1D & hist );
+void LogMsgHistBinCounts( const ConstTH1DVector & hists );
+void LogMsgHistBinCounts( const TH1D & hist1, const TH1D & hist2, bool bCountUnion = false );
+void LogMsgHistBinCounts( const ConstTH1DVector & hists1, const ConstTH1DVector & hists2, bool bCountUnion = false );
+
 void LogMsgHistDump( const TH1D & hist );
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -119,7 +124,10 @@ TH1DVector DrawMultipleHist( const char * title, const ConstTH1DVector & hists, 
 Double_t GetHistBinEffectiveEntries( const TH1D & hist, Int_t bin );
 
 size_t HistNonEmptyBinCount( const TH1D & hist, bool bIncludeUnderOverflow = false );
-size_t HistNonEmptyBinCount( const TH1D & h1, const TH1D & h2, bool bCountEitherNonEmpty = false, bool bIncludeUnderOverflow = false );
+size_t HistNonEmptyBinCount( const TH1D & h1, const TH1D & h2, bool bCountUnion = false, bool bIncludeUnderOverflow = false );
+
+size_t HistErrorBinCount( const TH1D & hist, bool bIncludeUnderOverflow = false );
+size_t HistErrorBinCount( const TH1D & h1, const TH1D & h2, bool bCountUnion = false, bool bIncludeUnderOverflow = false );
 
 void ZeroHistBin( TH1D & hist, Int_t bin );
 void ZeroHistEmptyBins( TH1D & h1, TH1D & h2 );

@@ -254,6 +254,65 @@ void LogMsgHistEffectiveEntries( const ConstTH1DVector & hists )
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+void LogMsgHistBinCounts( const TH1D & hist )
+{
+    Int_t nBinsA     = hist.GetNbinsX();
+    Int_t nBinsB     = hist.GetSize();
+    Int_t nNonEmptyA = (Int_t)HistNonEmptyBinCount(hist, false);
+    Int_t nNonEmptyB = (Int_t)HistNonEmptyBinCount(hist, true );
+    Int_t nErrorA    = (Int_t)HistErrorBinCount(hist, false);
+    Int_t nErrorB    = (Int_t)HistErrorBinCount(hist, true);
+
+    LogMsgInfo( "%hs:\tbins=%i(%i)  non-empty=%i(%i)  errors=%i(%i)", FMT_HS(hist.GetName()),
+                FMT_I(nBinsA),     FMT_I(nBinsB),
+                FMT_I(nNonEmptyA), FMT_I(nNonEmptyB),
+                FMT_I(nErrorA),    FMT_I(nErrorB) );
+}
+
+////////////////////////////////////////////////////////////////////////////////
+void LogMsgHistBinCounts( const TH1D & hist1, const TH1D & hist2, bool bCountUnion /*= false*/ )
+{
+    Int_t nBinsA     = hist1.GetNbinsX();
+    Int_t nBinsB     = hist1.GetSize();
+    Int_t nNonEmptyA = (Int_t)HistNonEmptyBinCount( hist1, hist2, bCountUnion, false );
+    Int_t nNonEmptyB = (Int_t)HistNonEmptyBinCount( hist1, hist2, bCountUnion, true  );
+    Int_t nErrorA    = (Int_t)HistErrorBinCount(    hist1, hist2, bCountUnion, false );
+    Int_t nErrorB    = (Int_t)HistErrorBinCount(    hist1, hist2, bCountUnion, true  );
+
+    LogMsgInfo( "%hs %hs %hs:\tbins=%i(%i)  non-empty=%i(%i)  errors=%i(%i)",
+                FMT_HS(hist1.GetName()), FMT_HS(bCountUnion ? "||" : "&&" ), FMT_HS(hist2.GetName()),
+                FMT_I(nBinsA),     FMT_I(nBinsB),
+                FMT_I(nNonEmptyA), FMT_I(nNonEmptyB),
+                FMT_I(nErrorA),    FMT_I(nErrorB) );
+}
+
+////////////////////////////////////////////////////////////////////////////////
+void LogMsgHistBinCounts( const ConstTH1DVector & hists )
+{
+    for (const TH1D * pHist : hists)
+    {
+        if (pHist)
+            LogMsgHistBinCounts(*pHist);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+void LogMsgHistBinCounts( const ConstTH1DVector & hists1, const ConstTH1DVector & hists2, bool bCountUnion /*= false*/ )
+{
+    auto       itr1 = hists1.cbegin();
+    const auto end1 = hists1.cend();
+
+    auto       itr2 = hists2.cbegin();
+    const auto end2 = hists2.cend();
+
+    for ( ; (itr1 != end1) && (itr2 != end2); ++itr1, ++itr2)
+    {
+        if (*itr1 && *itr2)
+            LogMsgHistBinCounts( **itr1, **itr2, bCountUnion );
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 void LogMsgHistDump( const TH1D & hist )
 {
     const MyProfile * pProf = hist.InheritsFrom(TProfile::Class()) ? static_cast<const MyProfile *>(&hist) : nullptr;
@@ -301,7 +360,7 @@ TH1D * ConvertTProfileToTH1D( const TH1D * pProfile, bool bDeleteProfile )
     if (pProfile->InheritsFrom(TProfile::Class()))
     {
         // create a new TH1D from the TProfile
-        pHist = ((TProfile *)pProfile)->ProjectionX("");  // do not add a suffix
+        pHist = ((TProfile *)pProfile)->ProjectionX( pProfile->GetName() );
 
         SetupHist( *pHist );
 
@@ -557,7 +616,7 @@ Double_t GetHistBinEffectiveEntries( const TH1D & hist, Int_t bin )
 
     Double_t sumW2 = hist.GetSumw2()->GetArray()[bin];
 
-    Double_t nEff = (sumW2 > 0 ? sumW * sumW / sumW2 : 0);
+    Double_t nEff = (sumW2 > 0 ? sumW * sumW / sumW2 : sumW);
 
     return nEff;
 }
@@ -580,7 +639,24 @@ size_t HistNonEmptyBinCount( const TH1D & hist, bool bIncludeUnderOverflow /*= f
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-size_t HistNonEmptyBinCount( const TH1D & h1, const TH1D & h2, bool bCountEitherNonEmpty /*= false*/, bool bIncludeUnderOverflow /*= false*/ )
+size_t HistErrorBinCount( const TH1D & hist, bool bIncludeUnderOverflow /*= false*/ )
+{
+    size_t nError(0);
+
+    const Int_t first = bIncludeUnderOverflow ? 0 : 1;
+    const Int_t last  = hist.GetSize() - 1 - first;
+
+    for (Int_t bin = first; bin <= last; ++bin)
+    {
+        if (hist.GetBinError(bin) != 0)
+            ++nError;
+    }
+
+    return nError;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+size_t HistNonEmptyBinCount( const TH1D & h1, const TH1D & h2, bool bCountUnion /*= false*/, bool bIncludeUnderOverflow /*= false*/ )
 {
     if (h1.GetSize() != h2.GetSize())
         ThrowError( "HistNonEmptyBinCount: histogram size mismatch." );
@@ -595,11 +671,34 @@ size_t HistNonEmptyBinCount( const TH1D & h1, const TH1D & h2, bool bCountEither
         bool ne1 = (GetHistBinEffectiveEntries( h1, bin ) != 0);
         bool ne2 = (GetHistBinEffectiveEntries( h2, bin ) != 0);
 
-        if ((ne1 && ne2) || (bCountEitherNonEmpty && (ne1 || ne2)))
+        if ((ne1 && ne2) || (bCountUnion && (ne1 || ne2)))
             ++nNonEmpty;
     }
 
     return nNonEmpty;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+size_t HistErrorBinCount( const TH1D & h1, const TH1D & h2, bool bCountUnion /*= false*/, bool bIncludeUnderOverflow /*= false*/ )
+{
+    if (h1.GetSize() != h2.GetSize())
+        ThrowError( "HistErrorBinCount: histogram size mismatch." );
+
+    size_t nError(0);
+
+    const Int_t first = bIncludeUnderOverflow ? 0 : 1;
+    const Int_t last  = h1.GetSize() - 1 - first;
+
+    for (Int_t bin = first; bin <= last; ++bin)
+    {
+        bool err1 = (h1.GetBinError(bin) != 0);
+        bool err2 = (h2.GetBinError(bin) != 0);
+
+        if ((err1 && err2) || (bCountUnion && (err1 || err2)))
+            ++nError;
+    }
+
+    return nError;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
