@@ -192,8 +192,8 @@ std::string GetLabel_FitToHorzLineAtOne( const TH1D & hist )
     TF1 horz1( "horz1", "1.0" );
 
     Chi2Result res;
-    res.chi2     = hist.Chisquare( &horz1 );
-    res.ndf      = (Int_t)HistNonEmptyBinCount(hist);
+    res.chi2     = hist.Chisquare( &horz1 );    // skips bins with zero error
+    res.ndf      = (Int_t)HistErrorBinCount(hist);
     res.prob     = (res.ndf > 0 ? TMath::Prob( res.chi2, res.ndf ) : 0.0);
     res.chi2_ndf = (res.ndf > 0 ? res.chi2 / res.ndf : 0.0);
 
@@ -209,8 +209,8 @@ std::string GetLabel_FitToHorzLineAtConstant( const TH1D & hist )
 
     TH1DUniquePtr pFitHist{ (TH1D *)hist.Clone() };     // clone hist as Fit is not const
 
-    int fitStatus = pFitHist->Fit( &horz, "NQM" );
-    if ((fitStatus < 0) || (fitStatus % 1000 != 0))  // ignore improve (M) errors
+    int fitStatus = pFitHist->Fit( &horz, "NQM" );      // skips bins with zero error
+    if ((fitStatus < 0) || (fitStatus % 1000 != 0))     // ignore improve (M) errors
         return "";
 
     Chi2Result res;
@@ -292,7 +292,8 @@ void WriteCompareFigure( const char * name, const char * title, const ConstTH1DV
                         pLegend->AddEntry( (TObject *)nullptr, label, "" );
                     }
 
-                    // add Chi2Test probability
+                    // add Chi2Test probability if TH1D (not valid for TProfile)
+                    if (!pCompAll->InheritsFrom(TProfile::Class()))
                     {
                         Chi2Result chi2All;
                         chi2All.Chi2Test( *pBaseAll, *pCompAll );
