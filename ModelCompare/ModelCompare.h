@@ -138,7 +138,18 @@ typedef std::vector<FigureSetup> FigureSetupVector;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+struct GoodBadHists
+{
+    RootUtil::TH1DUniquePtr     good;
+    RootUtil::TH1DUniquePtr     bad;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
 void ScaleHistToLuminosity( double luminosity, const RootUtil::TH1DVector & hists, const ModelFile & eventFile, bool bApplyCrossSectionError = false );
+
+GoodBadHists HistSplitGoodBadBins( const TH1D * pSource, const TH1D * pCompare = nullptr );
+std::list<GoodBadHists> HistSplitGoodBadBins( const RootUtil::ConstTH1DVector & hists, const RootUtil::ConstTH1DVector & compare );
 
 void WriteCompareFigure( const char * name, const char * title,
                          const RootUtil::ConstTH1DVector & data, const RootUtil::ConstTH1DVector & compare,

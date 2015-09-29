@@ -102,15 +102,7 @@ void ScaleHistToLuminosity( double luminosity, const TH1DVector & hists, const M
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
-struct GoodBadHists
-{
-    TH1DUniquePtr   good;
-    TH1DUniquePtr   bad;
-};
-
-////////////////////////////////////////////////////////////////////////////////
-GoodBadHists HistSplitGoodBadBins( const TH1D * pSource, const TH1D * pCompare = nullptr )
+GoodBadHists HistSplitGoodBadBins( const TH1D * pSource, const TH1D * pCompare /*= nullptr*/ )
 {
     const Double_t GoodStatMinEvents = 10;
 
@@ -178,7 +170,7 @@ GoodBadHists HistSplitGoodBadBins( const TH1D * pSource, const TH1D * pCompare =
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-std::list<GoodBadHists> HistSplitGoodBadBins( const ConstTH1DVector & hists, const ConstTH1DVector & compare  )
+std::list<GoodBadHists> HistSplitGoodBadBins( const ConstTH1DVector & hists, const ConstTH1DVector & compare )
 {
     std::list<GoodBadHists> result;
 
