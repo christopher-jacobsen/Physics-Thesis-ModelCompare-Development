@@ -745,18 +745,98 @@ Double_t KolmogorovTest_NonEmptyBins( const TH1D & h1, const TH1D & h2 )
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+Double_t HistPointChi2Test( const TH1D & p1, const TH1D & p2, Double_t & chi2, Int_t & ndf )
+{
+    // Use this with TProfile, or as an alternative chi2test to those implemented in TH1D
+    // Calculate chi2 as if the histograms are just measurement plots.
+
+    if (p1.GetSize() != p2.GetSize())
+        ThrowError( "HistValueChi2Test: profile size mismatch." );
+
+    const Int_t nBins = p1.GetSize() - 2;
+
+    chi2 = 0;
+    ndf  = nBins - 1;
+
+    for (Int_t bin = 1; bin <= nBins; ++bin)  // do not include under/overflow
+    {
+        Double_t n1 = GetHistBinEffectiveEntries(p1, bin);
+        Double_t n2 = GetHistBinEffectiveEntries(p2, bin);
+
+        if ((n1 == 0) || (n2 == 0))
+        {
+            // skip this bin, and reduce the ndf
+            --ndf;
+            continue;
+        }
+
+        Double_t v1 = p1.GetBinContent(bin);
+        Double_t v2 = p2.GetBinContent(bin);
+
+        Double_t e1 = p1.GetBinError(bin);
+        Double_t e2 = p2.GetBinError(bin);
+
+        Double_t delta  = v1 - v2;
+        Double_t errsqr = e1*e1 + e2*e2;
+
+        if (errsqr == 0)
+        {
+            // skip this bin, and reduce the ndf
+            --ndf;
+            continue;
+        }
+
+        Double_t chisqr = delta * delta / errsqr;
+
+        chi2 += chisqr;
+    }
+
+    if (ndf < 0) ndf = 0; 
+
+    Double_t prob = TMath::Prob( chi2, ndf );   // can handle ndf <= 0 (see TMath.cxx)
+
+    return prob;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 void Chi2Result::Chi2Test( const TH1D & h1, const TH1D & h2 )
 {
-    TH1DUniquePtr p1( (TH1D *)h1.Clone() );
-    TH1DUniquePtr p2( (TH1D *)h2.Clone() );
+    if (!h1.InheritsFrom(TProfile::Class()) && !h2.InheritsFrom(TProfile::Class()))
+    {
+        // both are TH1D
 
-    ZeroHistEmptyBins( *p1, *p2 );  // zero bins if either are zero
+        // We want the Chi2Test to skip bins if either are empty,
+        // however, Chi2TestX only skips bins if both are empty.
+        // To accomplish the desired behavior we make sure that if a bin is empty
+        // in one, it is also empty in the other.
 
-    LogMsgInfo( "Chi2Test(%hs, %hs): %u -> %u non-empty bins", FMT_HS(h1.GetName()), FMT_HS(h2.GetName()),
-                FMT_U(HistNonEmptyBinCount(h1,h2,true)), FMT_U(HistNonEmptyBinCount(*p1,*p2,true)) );
+        TH1DUniquePtr p1( (TH1D *)h1.Clone() );
+        TH1DUniquePtr p2( (TH1D *)h2.Clone() );
 
-    prob     = p1->Chi2TestX( p2.get(), chi2, ndf, igood, "WW" );
-    chi2_ndf = (ndf > 0 ? chi2 / ndf : 0.0);
+        ZeroHistEmptyBins( *p1, *p2 );  // zero bins if either are zero
+
+        LogMsgInfo( "Chi2Test(%hs, %hs): %u -> %u non-empty bins", FMT_HS(h1.GetName()), FMT_HS(h2.GetName()),
+                    FMT_U(HistNonEmptyBinCount(h1,h2,true)), FMT_U(HistNonEmptyBinCount(*p1,*p2,true)) );
+
+        // perform chi2test
+
+        prob     = p1->Chi2TestX( p2.get(), chi2, ndf, igood, "WW" );
+        chi2_ndf = (ndf > 0 ? chi2 / ndf : 0.0);
+    }
+    else
+    {
+        if (!h1.InheritsFrom(TProfile::Class()) || !h2.InheritsFrom(TProfile::Class()))
+            ThrowError( "Chi2Test: both histograms must inherit from TProfile" );
+
+        // both are TProfile
+
+        const TProfile & p1 = static_cast<const TProfile &>(h1);
+        const TProfile & p2 = static_cast<const TProfile &>(h2);
+
+        prob     = HistPointChi2Test( p1, p2, chi2, ndf );
+        chi2_ndf = (ndf > 0 ? chi2 / ndf : 0.0);
+        igood    = 0;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -136,6 +136,8 @@ void ZeroHistEmptyBins( TH1D & h1, TH1D & h2 );
 
 Double_t KolmogorovTest_NonEmptyBins( const TH1D & h1, const TH1D & h2 );
 
+Double_t HistPointChi2Test( const TH1D & p1, const TH1D & p2, Double_t & chi2, Int_t & ndf );
+
 struct Chi2Result
 {
     Double_t chi2     = 0;
