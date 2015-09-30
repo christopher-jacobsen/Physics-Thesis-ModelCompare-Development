@@ -292,18 +292,17 @@ void WriteCompareFigure( const char * name, const char * title, const ConstTH1DV
                         pLegend->AddEntry( (TObject *)nullptr, label, "" );
                     }
 
-                    // add Chi2Test probability if TH1D (not valid for TProfile)
-                    if (!pCompAll->InheritsFrom(TProfile::Class()))
+                    // add Chi2Test probability
                     {
                         Chi2Result chi2All;
-                        chi2All.Chi2Test( *pBaseAll, *pCompAll );
+                        chi2All.Chi2Test( *pBaseAll, *pCompAll );       // supports both TH1D and TProfile
 
                         std::string labelAll = std::string("All ") + chi2All.Label();
                         LogMsgInfo( labelAll );
                         pLegend->AddEntry( (TObject *)nullptr, labelAll.c_str(), "" );
 
                         Chi2Result chi2Good;
-                        chi2Good.Chi2Test( *pBaseGood, *pCompGood );
+                        chi2Good.Chi2Test( *pBaseGood, *pCompGood );    // supports both TH1D and TProfile
 
                         std::string labelGood = std::string("Good ") + chi2Good.Label();
                         LogMsgInfo( labelGood );
