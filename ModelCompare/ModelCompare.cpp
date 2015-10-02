@@ -230,13 +230,94 @@ std::string GetLabel_FitToHorzLineAtConstant( const TH1D & hist )
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+void HistScaleTextTicks( TH1D & hist, Float_t vert, Float_t horz = 1 )
+{
+    TAxis * xAxis = hist.GetXaxis();
+    TAxis * yAxis = hist.GetYaxis();
+
+    if (vert <= 0) vert = 1;
+    if (horz <= 0) horz = 1;
+
+    if (vert != 1)
+    {
+        // titles, labels, and x-ticks are vertically-sized
+
+        xAxis->SetTitleSize(  xAxis->GetTitleSize()  * vert );
+        xAxis->SetLabelSize(  xAxis->GetLabelSize()  * vert );
+        xAxis->SetTickLength( xAxis->GetTickLength() * vert );
+
+        yAxis->SetTitleSize(  yAxis->GetTitleSize()  * vert );
+        yAxis->SetLabelSize(  yAxis->GetLabelSize()  * vert );
+
+        // drawn title offset scales with both title size and offset
+        // correct y-axis title-offset so title does not move even though it is larger
+        yAxis->SetTitleOffset( yAxis->GetTitleOffset() / vert );
+    }
+
+    if (horz != 1)
+    {
+        // y-ticks are horizontally-sized
+
+        yAxis->SetTickLength( yAxis->GetTickLength() * horz );
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+void HistScaleTextTicks( const TH1DVector & hists, Float_t vert, Float_t horz = 1 )
+{
+    for (TH1D * pHist : hists)
+    {
+        if (pHist)
+            HistScaleTextTicks( *pHist, vert, horz );
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 void WriteCompareFigure( const char * name, const char * title, const ConstTH1DVector & data, const ConstTH1DVector & compare, const ColorVector & dataColors,
                          const ConstTH1DVector & rawData )
 {
+    const Double_t LowerPadFraction = 1.0/3.0;
+    const Double_t UpperPadFraction = 1.0 - LowerPadFraction;
+
     TCanvas canvas( name, title );
 
-    canvas.Divide(1,2); // divide canvas into an upper and lower pad
-    
+    // divide the canvas into two pads
+    {
+        canvas.SetMargin(0, 0, 0, 0);   // clear margins before division, so that entire canvas is "owned" by subpads
+        canvas.Divide(1,2,0,0);         // divide canvas into an upper and lower pad, with no space between pads
+
+        TVirtualPad * pPad = nullptr;
+
+        // setup upper pad
+        {
+            pPad = canvas.GetPad(1);
+
+            pPad->SetPad( 0, LowerPadFraction, 1, 1 );  // xlow, ylow, xup, yup
+
+            pPad->UseCurrentStyle();    // restore margins to default after division
+            pPad->SetBottomMargin(0);   // remove bottom margin
+
+            pPad->SetTopMargin( Float_t(pPad->GetTopMargin() / UpperPadFraction) );         // increase top margin
+        }
+
+        // setup lower pad
+        {
+            pPad = canvas.GetPad(2);
+
+            pPad->SetPad( 0, 0, 1, LowerPadFraction );  // xlow, ylow, xup, yup
+
+            pPad->UseCurrentStyle();    // restore margins to default after division
+            pPad->SetTopMargin(0);      // remove top margin
+
+            pPad->SetBottomMargin( Float_t(pPad->GetBottomMargin() / LowerPadFraction) );   // increase bottom margin
+        }
+
+        //Double_t xlow, ylow, xup, yup;
+        //pPad->GetPadPar(xlow, ylow, xup, yup);
+        //LogMsgInfo( "Before: x:%f->%f y:%f->%f L:%f R:%f B:%f T:%f", FMT_F(xlow), FMT_F(xup), FMT_F(ylow), FMT_F(yup),
+        //            FMT_F(pPad->GetLeftMargin()), FMT_F(pPad->GetRightMargin()), FMT_F(pPad->GetBottomMargin()), FMT_F(pPad->GetTopMargin()) );
+    }
+
     // draw upper pad
     {
         LogMsgInfo( "\n--- %hs : pad 1 ---", FMT_HS(name) );
@@ -245,6 +326,8 @@ void WriteCompareFigure( const char * name, const char * title, const ConstTH1DV
 
         // draw the histograms
         TH1DVector drawHists = DrawMultipleHist( title, data, dataColors );  // drawHists are owned by the current pad
+
+        HistScaleTextTicks( drawHists, 1/UpperPadFraction );
 
         // determine good/bad histograms
         std::list<GoodBadHists> goodBadData = HistSplitGoodBadBins( ToConstTH1DVector(drawHists), rawData );
@@ -324,6 +407,8 @@ void WriteCompareFigure( const char * name, const char * title, const ConstTH1DV
 
         // draw the histograms
         TH1DVector drawHists = DrawMultipleHist( "", compare );
+
+        HistScaleTextTicks( drawHists, 1/LowerPadFraction );
 
         // determine good/bad histograms
         std::list<GoodBadHists> goodBadCompare;
