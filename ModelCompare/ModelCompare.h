@@ -156,12 +156,18 @@ void WriteCompareFigure( const char * name, const char * title,
                          const RootUtil::ColorVector & dataColors,
                          const RootUtil::ConstTH1DVector & rawData );
 
-void LoadHistData( const ModelFileVector & models, const ObservableVector & observables, std::vector<RootUtil::TH1DVector> & hists );
+bool LoadCacheHist( const char * cacheFileName, TH1D * & pHist );
+
+void LoadHistData( const ModelFileVector & models, const ObservableVector & observables, std::vector<RootUtil::TH1DVector> & hists,
+                   const char * cacheFileName = nullptr );
 
 void CalculateCompareHists( const Observable & obs, const RootUtil::ConstTH1DVector & data, RootUtil::TH1DVector & comp,
                             const ModelFileVector & models, const RootUtil::ColorVector & dataColors );
 
-void ModelCompare( const char * outputFileName, const ModelFileVector & models, const ObservableVector & observables, const FigureSetupVector & figures );
+void ModelCompare( const char * outputFileName,
+                   const ModelFileVector & models, const ObservableVector & observables,
+                   const FigureSetupVector & figures,
+                   const char * cacheFileName = nullptr );
 
 ////////////////////////////////////////////////////////////////////////////////
 

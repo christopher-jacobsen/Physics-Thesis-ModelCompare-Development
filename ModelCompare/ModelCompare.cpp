@@ -573,31 +573,86 @@ void WriteCompareFigure( const char * name, const char * title, const ConstTH1DV
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void LoadHistData( const ModelFileVector & models, const ObservableVector & observables, std::vector<TH1DVector> & hists )
+bool LoadCacheHist( const char * cacheFileName, TH1D * & pHist )
+{
+    if (!cacheFileName || !cacheFileName[0] || !pHist)
+        return false;
+
+    std::unique_ptr<TH1D> pHistCache( LoadHist( cacheFileName, pHist->GetName() ) );
+    if (!pHistCache)
+        return false;
+
+    if (pHistCache->Class() != pHist->Class())
+        return false;
+
+    try
+    {
+        struct MyTH1 : public TH1
+        {
+            using TH1::CheckConsistency;
+        };
+
+        if (MyTH1::CheckConsistency( pHistCache.get(), pHist ))
+        {
+            delete pHist;
+            pHist = pHistCache.release();
+            return true;
+        }
+    }
+    catch (...) { }
+
+    return false;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+void LoadHistData( const ModelFileVector & models, const ObservableVector & observables, std::vector<TH1DVector> & hists, const char * cacheFileName /*= nullptr*/ )
 {
     hists.clear();
 
     for (const ModelFile & model : models)
     {
+        bool bLoadEvents = false;
+
         TH1DVector data;
+        TH1DVector load;
 
         for (const Observable & obs : observables)
         {
             TH1D * pHist = obs.MakeHist( model.modelName, model.modelTitle );
+
+            if (LoadCacheHist( cacheFileName, pHist ))
+            {
+                LogMsgInfo( "Loaded %hs from cache", FMT_HS(pHist->GetName()) );
+                load.push_back( nullptr );  // skip this histogram
+            }
+            else
+            {
+                load.push_back( pHist );
+                bLoadEvents = true;
+            }
+
             data.push_back( pHist );
         }
 
         auto FillFunc = [&](const HepMC::GenVertex & signal)
         {
-            size_t dataIndex = 0;
+            size_t obsIndex = 0;
             for (const Observable & obs : observables)
             {
-                obs.fillFunction( *data[dataIndex++], 1.0, signal );
+                TH1D * pHist = load[obsIndex++];
+                if (pHist)
+                    obs.fillFunction( *pHist, 1.0, signal );
             }
         };
 
-        LoadEvents( model.fileName, FillFunc );
+        if (bLoadEvents)
+        {
+            LoadEvents( model.fileName, FillFunc );
 
+            if (cacheFileName && cacheFileName[0])
+                SaveHists( cacheFileName, ToConstTH1DVector(data) );
+        }
+        
         hists.push_back( data );
     }
 }
@@ -651,7 +706,10 @@ void CalculateCompareHists( const Observable & obs, const ConstTH1DVector & data
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void ModelCompare( const char * outputFileName, const ModelFileVector & models, const ObservableVector & observables, const FigureSetupVector & figures )
+void ModelCompare( const char * outputFileName,
+                   const ModelFileVector & models, const ObservableVector & observables,
+                   const FigureSetupVector & figures,
+                   const char * cacheFileName /*= nullptr*/ )
 {
     // disable automatic histogram addition to current directory
     TH1::AddDirectory(kFALSE);
@@ -689,7 +747,7 @@ void ModelCompare( const char * outputFileName, const ModelFileVector & models, 
     std::vector<TH1DVector> modelData;  // modelData[model][observable]
 
     // load the model data for each model and observable
-    LoadHistData( loadModels, observables, modelData );
+    LoadHistData( loadModels, observables, modelData, cacheFileName );
 
     // write observables histograms
     for ( const TH1DVector & data : modelData )
