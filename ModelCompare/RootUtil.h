@@ -110,7 +110,11 @@ void ScaleHistToLuminosity( double luminosity, const TH1D & hist, size_t nEvents
 void ScaleHistToLuminosity( double luminosity, const TH1DVector & hist, size_t nEvents, double crossSection,
                             double crossSectionError, bool bApplyCrossSectionError = false );
 
-void WriteHists( TFile * pFile, const TH1DVector & hists );
+TH1D * LoadHist( const char * fileName, const char * histName );  // loads TH1D or TProfile
+
+void SaveHists( const char * fileName, const ConstTH1DVector & hists, const char * option = "UPDATE" );
+
+void WriteHists( TFile * pFile, const TH1DVector & hists );  // file gains ownership
 
 ////////////////////////////////////////////////////////////////////////////////
 

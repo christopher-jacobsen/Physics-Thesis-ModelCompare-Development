@@ -10,6 +10,7 @@
 
 // Root includes
 #include <TLorentzVector.h>
+#include <TSystem.h>
 #include <TFile.h>
 #include <TH1.h>
 #include <TProfile.h>
@@ -498,6 +499,85 @@ void ScaleHistToLuminosity( double luminosity, const TH1DVector & hists, size_t 
         if (pHist)
             ScaleHistToLuminosity( luminosity, *pHist, nEvents, crossSection, crossSectionError, bApplyCrossSectionError );
     }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TH1D * LoadHist( const char * fileName, const char * histName )
+{
+    if (gSystem->AccessPathName( fileName ))
+        return nullptr;
+
+    struct Cleanup
+    {
+        TDirectory * oldDir = gDirectory;
+
+        ~Cleanup()
+        {
+            if (oldDir)
+                oldDir->cd();
+        }
+
+    } cleanup;
+
+    TFile file( fileName, "READ" );
+    if (file.IsZombie() || !file.IsOpen())    // IsZombie is true if constructor failed
+        return nullptr;
+
+    // try TProfile first
+    {
+        TProfile * pHist = nullptr;
+        file.GetObject( histName, pHist );
+        if (pHist)
+        {
+            pHist->SetDirectory( nullptr );
+            return pHist;
+        }
+    }
+
+    // try TH1D next
+    {
+        TH1D * pHist = nullptr;
+        file.GetObject( histName, pHist );
+        if (pHist)
+        {
+            pHist->SetDirectory( nullptr );
+            return pHist;
+        }
+    }
+
+    return nullptr;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+void SaveHists( const char * fileName, const ConstTH1DVector & hists, const char * option )
+{
+    struct Cleanup
+    {
+        TDirectory * oldDir = gDirectory;
+
+        ~Cleanup()
+        {
+            if (oldDir)
+                oldDir->cd();
+        }
+
+    } cleanup;
+
+    TFile file( fileName, option );
+    if (file.IsZombie() || !file.IsOpen())    // IsZombie is true if constructor failed
+    {
+        LogMsgError( "Failed to create file (%hs).", FMT_HS(fileName) );
+        ThrowError( std::invalid_argument( fileName ) );
+    }
+
+    for ( const TH1D * pHist : hists )
+    {
+        TH1D * pClone = (TH1D *)pHist->Clone();
+        pClone->SetDirectory( &file );  // owned by output file, which will call delete
+        pClone->Write( 0, TObject::kOverwrite );
+    }
+
+    file.Close();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
