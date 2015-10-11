@@ -34,8 +34,24 @@ struct Observable;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-typedef void FillHistFunctionType(TH1D & hist, double weight, const HepMC::GenVertex & signal);
-typedef std::function< FillHistFunctionType  > FillHistFunction;
+typedef void GetObsFunctionType( const HepMC::GenVertex & signal, double * values, size_t count );
+typedef std::function< GetObsFunctionType > GetObsFunction;
+
+template < typename ... Args >
+double ReturnObsFunction( const HepMC::GenVertex & signal, Args ... args );
+
+template < typename ... Args >
+void GetObs( const HepMC::GenVertex & signal, double * values, size_t count,
+             const std::function< typeof(ReturnObsFunction<Args...>) > & RetObsFunc,
+             Args ... args )
+{
+    if (count != 1)
+        ThrowError( "GetObs: count must be 1." );
+    if (!values)
+        ThrowError( "GetObs: undefined values argument." );
+
+    values[0] = RetObsFunc( signal, args ... );
+}
 
 typedef TH1D * TH1DFactoryFunctionType( const Observable & obs, const char * name, const char * title );
 typedef std::function< TH1DFactoryFunctionType > TH1DFactoryFunction;
@@ -52,26 +68,27 @@ struct Observable
     Double_t                xMax;
     const char *            xAxisTitle;
     const char *            yAxisTitle;
-    FillHistFunction        fillFunction;
+    GetObsFunction          getFunction;
     TH1DFactoryFunction     factoryFunction = DefaultTH1DFactory;
 
     // force required fields to be filled on construction
     Observable( const char * name, const char * title, Int_t nBins, Double_t xMin, Double_t xMax,
                 const char * xAxisTitle, const char * yAxisTitle,
-                const FillHistFunction & fillFunction )
+                const GetObsFunction & getFunction )
       : name(name), title(title), nBins(nBins), xMin(xMin), xMax(xMax),
         xAxisTitle(xAxisTitle), yAxisTitle(yAxisTitle),
-        fillFunction(fillFunction)
+        getFunction(getFunction)
     {
     }
 
     Observable( const char * name, const char * title, Int_t nBins, Double_t xMin, Double_t xMax,
                 const char * xAxisTitle, const char * yAxisTitle,
-                const FillHistFunction & fillFunction,
+                const GetObsFunction & getFunction,
                 const TH1DFactoryFunction & factoryFunction )
       : name(name), title(title), nBins(nBins), xMin(xMin), xMax(xMax),
         xAxisTitle(xAxisTitle), yAxisTitle(yAxisTitle),
-        fillFunction(fillFunction), factoryFunction(factoryFunction)
+        getFunction(getFunction),
+        factoryFunction(factoryFunction)
     {
     }
 
@@ -89,9 +106,15 @@ struct Observable
 
     std::string BuildHistName(  const char * namePrefix  = nullptr, const char * nameSuffix  = nullptr ) const;
     std::string BuildHistTitle( const char * titlePrefix = nullptr, const char * titleSuffix = nullptr ) const;
+
+
+    void FillHist( TH1D & hist, double weight, const HepMC::GenVertex & signal ) const;
 };
 
 typedef std::vector<Observable> ObservableVector;
+
+// useful macro when defining tables of Observables
+#define GETOBS [](const HepMC::GenVertex & s, double * v, size_t c) -> void
 
 ////////////////////////////////////////////////////////////////////////////////
 

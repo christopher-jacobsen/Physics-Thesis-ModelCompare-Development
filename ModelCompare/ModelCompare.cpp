@@ -56,6 +56,25 @@ std::string Observable::BuildHistTitle( const char * titlePrefix /*= nullptr*/, 
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+void Observable::FillHist( TH1D & hist, double weight, const HepMC::GenVertex & signal ) const
+{
+    if (hist.InheritsFrom(TProfile::Class()))
+    {
+        double values[2] = { };
+        getFunction( signal, values, 2 );
+
+        static_cast<TProfile &>(hist).Fill( values[0], values[1], weight );
+    }
+    else
+    {
+        double value(0);
+        getFunction( signal, &value, 1 );
+
+        hist.Fill( value, weight );
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 TH1D * DefaultTH1DFactory( const Observable & obs, const char * name, const char * title )
 {
@@ -641,7 +660,7 @@ void LoadHistData( const ModelFileVector & models, const ObservableVector & obse
             {
                 TH1D * pHist = load[obsIndex++];
                 if (pHist)
-                    obs.fillFunction( *pHist, 1.0, signal );
+                    obs.FillHist( *pHist, 1.0, signal );
             }
         };
 

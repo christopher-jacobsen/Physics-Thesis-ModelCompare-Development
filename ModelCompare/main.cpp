@@ -19,11 +19,13 @@ using namespace ModelCompare;
 
 static const ObservableVector Observables1 =
 {
-    { "PTZ", "P_{T}(Z)",  100,     0,  500, "P_{T}(Z) [GeV/c]", "Events per 5 GeV/c",       [](TH1D & h, double w, const HepMC::GenVertex & s) { FillHistPT(  h, w, s, 24);     } },
-    { "MWZ", "M(WZ)",     100,     0, 1500, "M(WZ) [GeV/c^2]",  "Events per 15 GeV/c^2",    [](TH1D & h, double w, const HepMC::GenVertex & s) { FillHistMass(h, w, s, 24, 23); } },
-    { "RAZ", "Y(Z)",      100,   -10,   10, "Y(Z)",             "Events per bin",           [](TH1D & h, double w, const HepMC::GenVertex & s) { FillHistRap( h, w, s, 24);     } },
-    { "ETZ", "#eta(Z)",   100,   -10,   10, "#eta(Z)",          "Events per bin",           [](TH1D & h, double w, const HepMC::GenVertex & s) { FillHistEta( h, w, s, 24);     } },
-    { "PHZ", "#phi(Z)",   100, -M_PI, M_PI, "#phi(Z)",          "Events per bin",           [](TH1D & h, double w, const HepMC::GenVertex & s) { FillHistPhi( h, w, s, 24);     } },
+    // phase-space observables
+
+    { "PTZ", "P_{T}(Z)",  150,     0,  750, "P_{T}(Z) [GeV/c]", "Events per 5 GeV/c",       GETOBS{ GetObs(s,v,c, GetObsPT,   24);     } },
+    { "MWZ", "M(WZ)",     150,     0, 3000, "M(WZ) [GeV/c^2]",  "Events per 20 GeV/c^2",    GETOBS{ GetObs(s,v,c, GetObsMass, 24, 23); } },
+    { "RAZ", "Y(Z)",      100,    -5,    5, "Y(Z)",             "Events per bin",           GETOBS{ GetObs(s,v,c, GetObsRap,  24);     } },
+    { "ETZ", "#eta(Z)",   100,   -10,   10, "#eta(Z)",          "Events per bin",           GETOBS{ GetObs(s,v,c, GetObsEta,  24);     } },
+    { "PHZ", "#phi(Z)",   100, -M_PI, M_PI, "#phi(Z)",          "Events per bin",           GETOBS{ GetObs(s,v,c, GetObsPhi,  24);     } },
 };
 
 ////////////////////////////////////////////////////////////////////////////////
