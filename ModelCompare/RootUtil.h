@@ -61,7 +61,7 @@ inline TLorentzVector ToLorentz( const HepMC::FourVector & v )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void LoadEvents( const char * eventFileName, std::function<void(const HepMC::GenVertex & signal)> EventFunc );
+void LoadEvents( const char * eventFileName, std::function<void(const HepMC::GenVertex & signal)> EventFunc, size_t maxEvents = 0 );
 
 ConstGenParticleVector     FindOutgoingParticles(      const HepMC::GenVertex & signal, int pdg, bool bThrowNotFound = true );
 const HepMC::GenParticle * FindSingleOutgoingParticle( const HepMC::GenVertex & signal, int pdg, bool bThrowNotFound = true );

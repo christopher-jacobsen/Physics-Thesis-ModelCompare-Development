@@ -126,12 +126,22 @@ struct ModelFile
     double          crossSection;       // in pb
     double          crossSectionError;  // in pb
     size_t          crossSectionEvents;
+    size_t          maxLoadEvents = 0;  // 0 = unlimited
 
-    // force all fields to be set on construction
+    // force all required fields to be set on construction
     ModelFile( const char * fileName, const char * modelName, const char * modelTitle,
                double crossSection, double crossSectionError, size_t crossSectionEvents )
       : fileName(fileName), modelName(modelName), modelTitle(modelTitle),
         crossSection(crossSection), crossSectionError(crossSectionError), crossSectionEvents(crossSectionEvents)
+    {
+    }
+
+    ModelFile( const char * fileName, const char * modelName, const char * modelTitle,
+               double crossSection, double crossSectionError, size_t crossSectionEvents,
+               size_t maxLoadEvents )
+      : fileName(fileName), modelName(modelName), modelTitle(modelTitle),
+        crossSection(crossSection), crossSectionError(crossSectionError), crossSectionEvents(crossSectionEvents),
+        maxLoadEvents(maxLoadEvents)
     {
     }
 };

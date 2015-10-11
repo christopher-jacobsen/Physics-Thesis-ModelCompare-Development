@@ -666,7 +666,7 @@ void LoadHistData( const ModelFileVector & models, const ObservableVector & obse
 
         if (bLoadEvents)
         {
-            LoadEvents( model.fileName, FillFunc );
+            LoadEvents( model.fileName, FillFunc, model.maxLoadEvents );
 
             if (cacheFileName && cacheFileName[0])
                 SaveHists( cacheFileName, ToConstTH1DVector(data) );

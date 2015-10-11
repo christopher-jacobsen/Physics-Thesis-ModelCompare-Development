@@ -38,7 +38,7 @@ struct MyProfile : public TProfile
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-void LoadEvents( const char * eventFileName, std::function<void(const HepMC::GenVertex & signal)> EventFunc )
+void LoadEvents( const char * eventFileName, std::function<void(const HepMC::GenVertex & signal)> EventFunc, size_t maxEvents /*= 0*/ )
 {
     std::unique_ptr<ATOOLS::igzstream>  upStream;
     std::unique_ptr<HepMC::IO_GenEvent> upInput;
@@ -57,15 +57,21 @@ void LoadEvents( const char * eventFileName, std::function<void(const HepMC::Gen
         throw;
     }
 
+    if (maxEvents == 0)
+        maxEvents = std::numeric_limits<size_t>::max();
+
     HepMC::GenEvent genEvent;
 
-    while (upInput->fill_next_event( &genEvent ))
+    size_t nEvents = 0;
+    while ((nEvents < maxEvents) && upInput->fill_next_event( &genEvent ))
     {
         const HepMC::GenVertex * pSignal = genEvent.signal_process_vertex();
         if (!pSignal)
             ThrowError( "Missing signal vertex for event." );
 
         EventFunc( *pSignal );
+
+        ++nEvents;
     }
 }
 
