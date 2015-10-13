@@ -69,7 +69,8 @@ struct Observable
     const char *            xAxisTitle;
     const char *            yAxisTitle;
     GetObsFunction          getFunction;
-    TH1DFactoryFunction     factoryFunction = DefaultTH1DFactory;
+    size_t                  nDim            = 1;
+    TH1DFactoryFunction     factoryFunction = nullptr;
 
     // force required fields to be filled on construction
     Observable( const char * name, const char * title, Int_t nBins, Double_t xMin, Double_t xMax,
@@ -84,10 +85,21 @@ struct Observable
     Observable( const char * name, const char * title, Int_t nBins, Double_t xMin, Double_t xMax,
                 const char * xAxisTitle, const char * yAxisTitle,
                 const GetObsFunction & getFunction,
+                size_t nDim )
+      : name(name), title(title), nBins(nBins), xMin(xMin), xMax(xMax),
+        xAxisTitle(xAxisTitle), yAxisTitle(yAxisTitle),
+        getFunction(getFunction), nDim(nDim)
+    {
+    }
+
+    Observable( const char * name, const char * title, Int_t nBins, Double_t xMin, Double_t xMax,
+                const char * xAxisTitle, const char * yAxisTitle,
+                const GetObsFunction & getFunction,
+                size_t nDim,
                 const TH1DFactoryFunction & factoryFunction )
       : name(name), title(title), nBins(nBins), xMin(xMin), xMax(xMax),
         xAxisTitle(xAxisTitle), yAxisTitle(yAxisTitle),
-        getFunction(getFunction),
+        getFunction(getFunction), nDim(nDim),
         factoryFunction(factoryFunction)
     {
     }
