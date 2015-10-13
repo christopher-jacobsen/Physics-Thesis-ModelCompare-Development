@@ -87,7 +87,7 @@ TH1D * DefaultTH1DFactory( const Observable & obs, const char * name, const char
 
 TH1D * DefaultTProfileFactory( const Observable & obs, const char * name, const char * title )
 {
-    TProfile * pHist = new TProfile( name, title, obs.nBins, obs.xMin, obs.xMax, "s" );  // stdev instead of sdom
+    TProfile * pHist = new TProfile( name, title, obs.nBins, obs.xMin, obs.xMax, "" );  // sdom
 
     SetupHist( *pHist, obs.xAxisTitle, obs.yAxisTitle );
 
