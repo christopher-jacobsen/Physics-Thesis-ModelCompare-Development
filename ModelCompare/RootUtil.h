@@ -20,8 +20,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 // forward declarations
 
-class TH1D;
 class TFile;
+class TH1D;
+class TNtupleD;
 
 namespace HepMC
 {
@@ -36,22 +37,31 @@ namespace RootUtil
 
 ////////////////////////////////////////////////////////////////////////////////
 
-typedef std::vector<const char *>   CStringVector;
+typedef std::vector<const char *>       CStringVector;
 
-typedef std::vector<const TH1D *>       ConstTH1DVector;
 typedef std::vector<TH1D *>             TH1DVector;
+typedef std::vector<const TH1D *>       ConstTH1DVector;
+typedef std::vector<TNtupleD *>         TupleVector;
+typedef std::vector<const TNtupleD *>   ConstTupleVector;
 typedef std::vector<Color_t>            ColorVector;
+
+typedef std::vector< const HepMC::GenParticle * > ConstGenParticleVector;
+
+////////////////////////////////////////////////////////////////////////////////
 
 typedef std::unique_ptr<TH1D>           TH1DUniquePtr;
 typedef std::unique_ptr<const TH1D>     ConstTH1DUniquePtr;
-
-typedef std::vector< const HepMC::GenParticle * > ConstGenParticleVector;
 
 ////////////////////////////////////////////////////////////////////////////////
 
 inline ConstTH1DVector ToConstTH1DVector( const TH1DVector & v )
 {
     return ConstTH1DVector( v.cbegin(), v.cend() );
+}
+
+inline ConstTupleVector ToConstTupleVector( const TupleVector & v )
+{
+    return ConstTupleVector( v.cbegin(), v.cend() );
 }
 
 inline TLorentzVector ToLorentz( const HepMC::FourVector & v )
@@ -77,6 +87,22 @@ void FillHistRap(  TH1D & hist, double weight, const HepMC::GenVertex & signal, 
 void FillHistEta(  TH1D & hist, double weight, const HepMC::GenVertex & signal, int pdg );
 void FillHistPhi(  TH1D & hist, double weight, const HepMC::GenVertex & signal, int pdg );
 void FillHistMass( TH1D & hist, double weight, const HepMC::GenVertex & signal, int pdg1, int pdg2 );
+
+////////////////////////////////////////////////////////////////////////////////
+
+TH1D * LoadHist( const char * fileName, const char * histName );  // loads TH1D or TProfile
+
+void SaveHists( const char * fileName, const ConstTH1DVector & hists, const char * option = "UPDATE" );
+
+void WriteHists( TFile * pFile, const TH1DVector & hists );  // file gains ownership
+
+////////////////////////////////////////////////////////////////////////////////
+
+TNtupleD * LoadTuple( const char * fileName, const char * tupleName );
+
+void SaveTuples( const char * fileName, const ConstTupleVector & tuples, const char * option = "UPDATE" );
+
+bool LoadCacheTuple( const char * cacheFileName, TNtupleD * & pTuple );
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -109,12 +135,6 @@ void ScaleHistToLuminosity( double luminosity, const TH1D & hist, size_t nEvents
 
 void ScaleHistToLuminosity( double luminosity, const TH1DVector & hist, size_t nEvents, double crossSection,
                             double crossSectionError, bool bApplyCrossSectionError = false );
-
-TH1D * LoadHist( const char * fileName, const char * histName );  // loads TH1D or TProfile
-
-void SaveHists( const char * fileName, const ConstTH1DVector & hists, const char * option = "UPDATE" );
-
-void WriteHists( TFile * pFile, const TH1DVector & hists );  // file gains ownership
 
 ////////////////////////////////////////////////////////////////////////////////
 
