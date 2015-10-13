@@ -583,9 +583,12 @@ void SaveHists( const char * fileName, const ConstTH1DVector & hists, const char
 
     for ( const TH1D * pHist : hists )
     {
-        TH1D * pClone = (TH1D *)pHist->Clone();
-        pClone->SetDirectory( &file );  // owned by output file, which will call delete
-        pClone->Write( 0, TObject::kOverwrite );
+        if (pHist)
+        {
+            TH1D * pClone = (TH1D *)pHist->Clone();
+            pClone->SetDirectory( &file );  // owned by output file, which will call delete
+            pClone->Write( 0, TObject::kOverwrite );
+        }
     }
 
     file.Close();
@@ -596,8 +599,11 @@ void WriteHists( TFile * pFile, const TH1DVector & hists )
 {
     for ( TH1D * pHist : hists )
     {
-        pHist->SetDirectory( pFile );  // owned by output file, which will call delete
-        pHist->Write();
+        if (pHist)
+        {
+            pHist->SetDirectory( pFile );  // owned by output file, which will call delete
+            pHist->Write();
+        }
     }
 }
 
@@ -667,9 +673,12 @@ void SaveTuples( const char * fileName, const ConstTupleVector & tuples, const c
 
     for ( const TNtupleD * pTuple : tuples )
     {
-        TNtupleD * pClone = (TNtupleD *)pTuple->Clone();
-        pClone->SetDirectory( &file );  // owned by output file, which will call delete
-        pClone->Write( 0, TObject::kOverwrite );
+        if (pTuple)
+        {
+            TNtupleD * pClone = (TNtupleD *)pTuple->Clone();
+            pClone->SetDirectory( &file );  // owned by output file, which will call delete
+            pClone->Write( 0, TObject::kOverwrite );
+        }
     }
 
     file.Close();
