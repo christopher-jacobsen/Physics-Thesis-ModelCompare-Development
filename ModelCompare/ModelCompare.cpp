@@ -49,9 +49,17 @@ std::string Observable::BuildHistTitle( const char * titlePrefix /*= nullptr*/, 
 {
     std::string sTitle;
 
+    /*
     if (titlePrefix && titlePrefix[0]) { sTitle += titlePrefix; sTitle += " - "; }
     sTitle += this->title;
     if (titleSuffix && titleSuffix[0]) { sTitle += " - "; sTitle += titleSuffix; }
+    */
+
+    if (titlePrefix && titlePrefix[0]) sTitle += titlePrefix;
+    if (titleSuffix && titleSuffix[0]) { if (!sTitle.empty()) sTitle += " - "; sTitle += titleSuffix; }
+
+    if (sTitle.empty())
+        sTitle = this->title;
 
     return sTitle;
 }
