@@ -395,7 +395,7 @@ void WriteCompareFigure( const char * name, const char * title, const ConstTH1DV
 
     /////
 
-    const Double_t LowerPadFraction = 1.0/3.0;
+    const Double_t LowerPadFraction = 1.0/2.0;
     const Double_t UpperPadFraction = 1.0 - LowerPadFraction;
 
     TCanvas canvas( name, title );
@@ -464,7 +464,7 @@ void WriteCompareFigure( const char * name, const char * title, const ConstTH1DV
 
         // add a customized legend, different than TPad::BuildLegend
         {
-            TLegend * pLegend = new TLegend( 0.33, 0.67, 0.88, 0.88 );  // using default position used by TPad::BuildLegend
+            TLegend * pLegend = new TLegend( 0.5, 0.60, 0.88, 0.88 );
             pLegend->SetMargin( 0.1 );  // reduce width for entry symbol from 25% to 10%
 
             auto gbitr = goodBadData.cbegin();
@@ -570,15 +570,15 @@ void WriteCompareFigure( const char * name, const char * title, const ConstTH1DV
 
         // add a customized legend, different than TPad::BuildLegend
         {
-            //TLegend * pLegend = new TLegend( 0.12, 0.53, 0.7, 0.88 );  // .2 wider than default and aligned to left
-            //pLegend->SetMargin( 0.1 );  // reduce width for entry symbol from 25% to 10%
+            TLegend * pLegend = new TLegend( 0.12, 0.74, 0.65, 0.88 );
+            pLegend->SetMargin( 0.01 ); // remove object column
 
-            TLegend legendStyle( 0.12, 0.74, 0.6, 0.88 );
+            //TLegend legendStyle( 0.12, 0.67, 0.5, 0.88 );
 
-            TPaveText * pTextBox = new TPaveText;
-            *static_cast<TAttText *>( pTextBox ) = legendStyle;
-            *static_cast<TPave *>(    pTextBox ) = legendStyle;
-            pTextBox->SetMargin( 0.01 );
+            //TPaveText * pTextBox = new TPaveText;
+            //*static_cast<TAttText *>( pTextBox ) = legendStyle;
+            //*static_cast<TPave *>(    pTextBox ) = legendStyle;
+            //pTextBox->SetMargin( 0.01 );
 
             auto gbitr = goodBadCompare.cbegin();
 
@@ -594,7 +594,8 @@ void WriteCompareFigure( const char * name, const char * title, const ConstTH1DV
                     //std::string label = GetLabel_FitToHorzLineAtOne( *pCompGood, *pCompAll );
                     std::string label = GetLabel_FitToHorzLineAtOne( *pCompGood );
                     LogMsgInfo( label );
-                    pTextBox->AddText( label.c_str() );
+                    pLegend->AddEntry( (TObject *)nullptr, label.c_str(), "" );
+                    //pTextBox->AddText( label.c_str() );
                 }
 
                 // add a fit to a horizontal line at a y=c
@@ -602,12 +603,15 @@ void WriteCompareFigure( const char * name, const char * title, const ConstTH1DV
                     //std::string label = GetLabel_FitToHorzLineAtConstant( *pCompGood, *pCompAll );
                     std::string label = GetLabel_FitToHorzLineAtConstant( *pCompGood );
                     LogMsgInfo( label );
-                    pTextBox->AddText( label.c_str() );
+                    pLegend->AddEntry( (TObject *)nullptr, label.c_str(), "" );
+                    //pTextBox->AddText( label.c_str() );
                 }
             }
 
-            pTextBox->SetBit( kCanDelete );  // inform pad that it can delete this object
-            pTextBox->Draw();                // add legend to current pad's list of primatives
+            pLegend->SetBit( kCanDelete );  // inform pad that it can delete this object
+            pLegend->Draw();                // add legend to current pad's list of primatives
+            //pTextBox->SetBit( kCanDelete );  // inform pad that it can delete this object
+            //pTextBox->Draw();                // add legend to current pad's list of primatives
         }
     }
 
