@@ -649,6 +649,11 @@ bool LoadCacheHist( const char * cacheFileName, TH1D * & pHist )
 
         if (MyTH1::CheckConsistency( pHistCache.get(), pHist ))
         {
+            // set title in case it has changed
+            pHistCache->SetTitle( pHist->GetTitle() );
+            pHistCache->GetXaxis()->SetTitle( pHist->GetXaxis()->GetTitle() );
+            pHistCache->GetYaxis()->SetTitle( pHist->GetYaxis()->GetTitle() );
+
             delete pHist;
             pHist = pHistCache.release();
             return true;
