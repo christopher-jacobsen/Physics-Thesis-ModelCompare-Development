@@ -12,6 +12,7 @@
 #include "RootUtil.h"
 
 // Root includes
+#include <TStyle.h>
 #include <TFile.h>
 #include <TH1.h>
 #include <TProfile.h>
@@ -379,6 +380,21 @@ void HistScaleTextTicks( const TH1DVector & hists, Float_t vert, Float_t horz = 
 void WriteCompareFigure( const char * name, const char * title, const ConstTH1DVector & data, const ConstTH1DVector & compare, const ColorVector & dataColors,
                          const ConstTH1DVector & rawData )
 {
+    auto SetupCompareHists = []( const TH1DVector & hists ) -> void
+    {
+        for (TH1D * pHist : hists)
+        {
+            if (pHist)
+            {
+                //pHist->SetLineWidth(2);
+                pHist->GetXaxis()->CenterTitle();
+                pHist->GetYaxis()->CenterTitle();
+            }
+        }
+    };
+
+    /////
+
     const Double_t LowerPadFraction = 1.0/3.0;
     const Double_t UpperPadFraction = 1.0 - LowerPadFraction;
 
@@ -429,6 +445,8 @@ void WriteCompareFigure( const char * name, const char * title, const ConstTH1DV
 
         // draw the histograms
         TH1DVector drawHists = DrawMultipleHist( title, data, dataColors );  // drawHists are owned by the current pad
+
+        SetupCompareHists( drawHists );
 
         HistScaleTextTicks( drawHists, 1/UpperPadFraction );
 
@@ -503,6 +521,8 @@ void WriteCompareFigure( const char * name, const char * title, const ConstTH1DV
 
         // draw the histograms
         TH1DVector drawHists = DrawMultipleHist( "", compare );
+
+        SetupCompareHists( drawHists );
 
         HistScaleTextTicks( drawHists, 1/LowerPadFraction );
 
@@ -685,7 +705,7 @@ void CalculateCompareHists( const Observable & obs, const ConstTH1DVector & data
 
     std::unique_ptr<const TH1D> upBase( ConvertTProfileToTH1D( data.front(), false ) );
 
-    std::string nameSuffix  = "_vs_" + std::string(models[0].modelName) + "_" + std::string(obs.name);
+    std::string nameSuffix  = "_vs_" + std::string(models[0].modelName)  + "_"   + std::string(obs.name);
     std::string titleSuffix = " vs " + std::string(models[0].modelTitle) + " - " + obs.title;
 
     for ( size_t i = 1; i < data.size(); ++i)
@@ -732,6 +752,16 @@ void ModelCompare( const char * outputFileName,
 {
     // disable automatic histogram addition to current directory
     TH1::AddDirectory(kFALSE);
+    // enable automatic sumw2 for every histogram
+    TH1::SetDefaultSumw2(kTRUE);
+
+    // modify the global style
+    gStyle->SetPaperSize( TStyle::kA4 );
+    gStyle->SetTitleOffset( 1.3, "xyz" ); // increase title offsets a little more
+    gStyle->SetPadTopMargin(   0.03 );
+    gStyle->SetPadRightMargin( 0.03 );
+    gStyle->SetPadLeftMargin(  0.09 );
+    gStyle->SetOptTitle( kFALSE );
 
     LogMsgInfo( "Output file: %hs", FMT_HS(outputFileName) );
     std::unique_ptr<TFile> upOutputFile( new TFile( outputFileName, "RECREATE" ) );
