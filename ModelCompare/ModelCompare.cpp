@@ -488,7 +488,8 @@ void WriteCompareFigure( const char * name, const char * title, const ConstTH1DV
                         Double_t probAll  = KolmogorovTest_NonEmptyBins( *pBaseAll,  *pCompAll  );
                         Double_t probGood = KolmogorovTest_NonEmptyBins( *pBaseGood, *pCompGood );
 
-                        std::string label = StringFormat( "Kolmogorov = %.3g[%.3g]", FMT_F(probGood), FMT_F(probAll) );
+                        //std::string label = StringFormat( "Kolmogorov = %.3g[%.3g]", FMT_F(probGood), FMT_F(probAll) );
+                        std::string label = StringFormat( "Kolmogorov = %.3g", FMT_F(probGood) );
                         LogMsgInfo( label );
                         pLegend->AddEntry( (TObject *)nullptr, label.c_str(), "" );
                     }
@@ -501,7 +502,8 @@ void WriteCompareFigure( const char * name, const char * title, const ConstTH1DV
                         Chi2Result chi2Good;
                         chi2Good.Chi2Test( *pBaseGood, *pCompGood );    // supports both TH1D and TProfile
 
-                        std::string label = GetChi2ResultString( chi2Good, chi2All );
+                        //std::string label = GetChi2ResultString( chi2Good, chi2All );
+                        std::string label = GetChi2ResultString( chi2Good );
                         LogMsgInfo( label );
                         pLegend->AddEntry( (TObject *)nullptr, label.c_str(), "" );
                     }
@@ -589,14 +591,16 @@ void WriteCompareFigure( const char * name, const char * title, const ConstTH1DV
 
                 // add a fit to a horizontal line at y=1.0
                 {
-                    std::string label = GetLabel_FitToHorzLineAtOne( *pCompGood, *pCompAll );
+                    //std::string label = GetLabel_FitToHorzLineAtOne( *pCompGood, *pCompAll );
+                    std::string label = GetLabel_FitToHorzLineAtOne( *pCompGood );
                     LogMsgInfo( label );
                     pTextBox->AddText( label.c_str() );
                 }
 
                 // add a fit to a horizontal line at a y=c
                 {
-                    std::string label = GetLabel_FitToHorzLineAtConstant( *pCompGood, *pCompAll );
+                    //std::string label = GetLabel_FitToHorzLineAtConstant( *pCompGood, *pCompAll );
+                    std::string label = GetLabel_FitToHorzLineAtConstant( *pCompGood );
                     LogMsgInfo( label );
                     pTextBox->AddText( label.c_str() );
                 }
